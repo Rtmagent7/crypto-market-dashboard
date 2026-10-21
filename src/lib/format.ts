@@ -54,3 +54,19 @@ export const formatChange = (pct: number | null): FormattedChange => {
     ? { direction: "up", arrow: "▲", text: `+${pct2.format(rounded)}%` }
     : { direction: "down", arrow: "▼", text: `${MINUS}${pct2.format(-rounded)}%` };
 };
+
+const usd0 = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+const pctFixed1 = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** Macro indicator values: "5.1%" / "−0.6%" (true minus) or whole dollars. */
+export const formatIndicator = (unit: "percent" | "usd", value: number): string =>
+  unit === "usd"
+    ? usd0.format(value)
+    : `${Math.round(value * 10) < 0 ? MINUS : ""}${pctFixed1.format(Math.abs(value))}%`;

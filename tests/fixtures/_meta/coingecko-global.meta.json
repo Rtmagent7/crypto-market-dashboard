@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-21T14:14:12.008Z",
+  "url": "https://api.coingecko.com/api/v3/global",
+  "status": 200,
+  "keyless": "public API (no key), same schema as Demo",
+  "headers": {
+    "cache-control": "max-age=0, private, must-revalidate",
+    "cf-cache-status": "BYPASS",
+    "date": "Wed, 21 Oct 2026 14:14:11 GMT"
+  }
+}

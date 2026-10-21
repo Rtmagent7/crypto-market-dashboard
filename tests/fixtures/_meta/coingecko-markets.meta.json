@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-10-21T14:14:10.228Z",
+  "url": "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=24h",
+  "status": 200,
+  "keyless": "public API (no key), same schema as Demo",
+  "headers": {
+    "cache-control": "max-age=30, public, must-revalidate, s-maxage=60",
+    "cf-cache-status": "HIT",
+    "date": "Wed, 21 Oct 2026 14:14:10 GMT",
+    "per-page": "50"
+  }
+}

@@ -1,7 +1,7 @@
 import { extendZodWithOpenApi, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 
-import type { CryptoAsset, DataEnvelope } from "../../../modules/shared/domain";
+import type { CryptoAsset, DataEnvelope, FxRates } from "../../../modules/shared/domain";
 
 // Public HTTP contract of /api/*, documented in docs/openapi.yaml (`npm run openapi`).
 // Relative imports only: scripts/generate-openapi.mts runs this file outside Next.js.
@@ -53,20 +53,34 @@ export const CryptoAssetSchema = z
 
 export const MarketEnvelopeSchema = envelope("MarketEnvelope", z.array(CryptoAssetSchema));
 
+export const FxRatesSchema = z
+  .object({
+    base: z.string().length(3).openapi({ example: "USD" }),
+    date: z
+      .string()
+      .openapi({ description: "Business day of the rates (YYYY-MM-DD)", example: "2026-10-21" }),
+    rates: z.record(z.string(), z.number()).openapi({ example: { IDR: 18043, EUR: 0.86155 } }),
+  })
+  .openapi("FxRates");
+
+export const FxEnvelopeSchema = envelope("FxEnvelope", FxRatesSchema);
+
 // Compile-time guard: the documented contract must equal the domain model exactly.
 type Equals<A, B> =
   (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2 ? true : false;
 const assertContract = <T extends true>(): T => true as T;
 assertContract<Equals<z.infer<typeof CryptoAssetSchema>, CryptoAsset>>();
 assertContract<Equals<z.infer<typeof MarketEnvelopeSchema>, DataEnvelope<CryptoAsset[]>>>();
+assertContract<Equals<z.infer<typeof FxRatesSchema>, FxRates>>();
+assertContract<Equals<z.infer<typeof FxEnvelopeSchema>, DataEnvelope<FxRates>>>();
 
 export const registry = new OpenAPIRegistry();
 
-const unavailable = {
-  description: "No cached data and the provider cannot be called (budget, breaker or outage).",
+const unavailable = (schema: z.ZodType): object => ({
+  description: "No cached data and no provider can be called (budget, breaker or outage).",
   headers: { "Retry-After": { schema: { type: "integer" as const }, description: "Seconds" } },
-  content: { "application/json": { schema: MarketEnvelopeSchema } },
-};
+  content: { "application/json": { schema } },
+});
 
 registry.registerPath({
   method: "get",
@@ -82,6 +96,24 @@ registry.registerPath({
       content: { "application/json": { schema: MarketEnvelopeSchema } },
     },
     429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
-    503: unavailable,
+    503: unavailable(MarketEnvelopeSchema),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/fx",
+  summary: "Latest USD exchange rates",
+  description:
+    "Frankfurter (ECB reference rates, TTL 6 h); ExchangeRate-API serves as the backup and is " +
+    "named in `source` when it was used.",
+  tags: ["fx"],
+  responses: {
+    200: {
+      description: "Fresh or stale rates.",
+      content: { "application/json": { schema: FxEnvelopeSchema } },
+    },
+    429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
+    503: unavailable(FxEnvelopeSchema),
   },
 });

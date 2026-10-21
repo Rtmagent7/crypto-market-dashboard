@@ -23,8 +23,9 @@ describe("authorizeCron — Bearer CRON_SECRET, constant-time (spec §11)", () =
 });
 
 describe("parseScope", () => {
-  it("accepts the four warm scopes only", () => {
+  it("accepts the known warm scopes only", () => {
     expect(parseScope("market")).toBe("market");
+    expect(parseScope("stocks-daily")).toBe("stocks-daily");
     expect(parseScope("ai")).toBe("ai");
     expect(parseScope("everything")).toBeNull();
     expect(parseScope(null)).toBeNull();

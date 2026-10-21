@@ -7,7 +7,7 @@ import { getMarketService } from "@/modules/market/market.service";
 import type { DataEnvelope, DataStatus } from "@/modules/shared/domain";
 import { getStocksService } from "@/modules/stocks/stocks.service";
 
-import { authorizeCron, parseScope, type WarmScope } from "./auth";
+import { WARM_SCOPES, authorizeCron, parseScope, type WarmScope } from "./auth";
 
 type WarmReport = { scope: WarmScope; results: Record<string, DataStatus> };
 
@@ -23,15 +23,11 @@ const WARMERS: Record<WarmScope, () => Record<string, Promise<DataStatus>>> = {
       trending: statusOf(m.getTrending()),
     };
   },
-  // The service decides from is_market_open whether the provider is actually called.
-  stocks: () => {
-    const s = getStocksService();
-    return {
-      quotes: statusOf(s.getQuotes()),
-      hourly: statusOf(s.getSeries("1d")),
-      daily: statusOf(s.getSeries("1y")),
-    };
-  },
+  // One Twelve Data batch per scope (8 credits = the whole minute). The TTLs decide whether the
+  // provider is actually called, e.g. quotes only refresh at :00/:20/:40 while the market is open.
+  stocks: () => ({ quotes: statusOf(getStocksService().getQuotes()) }),
+  "stocks-intraday": () => ({ hourly: statusOf(getStocksService().getSeries("1d")) }),
+  "stocks-daily": () => ({ daily: statusOf(getStocksService().getSeries("1y")) }),
   fx: () => {
     const f = getFxService();
     return { rates: statusOf(f.getRates()), history: statusOf(f.getHistories()) };
@@ -39,7 +35,7 @@ const WARMERS: Record<WarmScope, () => Record<string, Promise<DataStatus>>> = {
   ai: () => ({ brief: statusOf(getAiService().getBrief()) }),
 };
 
-/** GET|POST /api/cron/warm?scope=market|stocks|fx|ai — Authorization: Bearer CRON_SECRET. */
+/** GET|POST /api/cron/warm?scope=<WARM_SCOPES> — Authorization: Bearer CRON_SECRET. */
 async function warm(request: NextRequest): Promise<Response> {
   await connection();
   const noStore = { "cache-control": "no-store" };
@@ -49,7 +45,7 @@ async function warm(request: NextRequest): Promise<Response> {
   const scope = parseScope(request.nextUrl.searchParams.get("scope"));
   if (!scope) {
     return Response.json(
-      { error: "scope must be market, stocks, fx or ai" },
+      { error: `scope must be one of ${WARM_SCOPES.join(", ")}` },
       { status: 400, headers: noStore },
     );
   }

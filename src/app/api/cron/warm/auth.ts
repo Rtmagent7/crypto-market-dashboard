@@ -2,7 +2,18 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import { z } from "zod";
 
-export const WARM_SCOPES = ["market", "stocks", "fx", "ai"] as const;
+/**
+ * Twelve Data allows 8 credits/minute = one 8-ticker batch, so its three batch types are warmed
+ * by separate schedules in different minutes (spec §4).
+ */
+export const WARM_SCOPES = [
+  "market",
+  "stocks",
+  "stocks-intraday",
+  "stocks-daily",
+  "fx",
+  "ai",
+] as const;
 export type WarmScope = (typeof WARM_SCOPES)[number];
 
 const Scope = z.enum(WARM_SCOPES);

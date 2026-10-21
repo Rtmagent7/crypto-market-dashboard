@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildMessages — deterministic prompt template > is byte-identical for identical input (snapshot) 1`] = `
+[
+  {
+    "content": "You write a short market brief for a public crypto and markets dashboard. Use only the market data provided by the user message, which is JSON. Do not use outside knowledge, news or predictions. Write at most 120 words in plain text: no markdown, no lists, no headings, no emoji, no links. Cover the overall crypto market, Bitcoin's dominance, the biggest movers, and the USD/IDR rate if present. State facts and figures neutrally. This is educational information, not financial or investment advice: never recommend buying, selling or holding anything.",
+    "role": "system",
+  },
+  {
+    "content": "{"global":{"marketCapUsdT":2.84,"change24hPct":-0.46,"btcDominancePct":59.7,"volume24hUsdB":83.4},"usdIdr":{"rate":18043,"change1dPct":0.32},"top10":[{"symbol":"BTC","rank":1,"priceUsd":84456,"change24hPct":2.39},{"symbol":"ETH","rank":2,"priceUsd":2511.65,"change24hPct":3.04},{"symbol":"USDT","rank":3,"priceUsd":0.9992,"change24hPct":0},{"symbol":"BNB","rank":4,"priceUsd":749.36,"change24hPct":2.16},{"symbol":"XRP","rank":5,"priceUsd":1.38,"change24hPct":4.77},{"symbol":"USDC","rank":6,"priceUsd":0.9995,"change24hPct":-0.03},{"symbol":"SOL","rank":7,"priceUsd":108.48,"change24hPct":2.74},{"symbol":"TRX","rank":8,"priceUsd":0.3317,"change24hPct":0.26},{"symbol":"FIGR_HELOC","rank":9,"priceUsd":1.02,"change24hPct":0.56},{"symbol":"ZEC","rank":10,"priceUsd":1342.24,"change24hPct":12.73}],"gainers":[{"symbol":"ENA","rank":38,"priceUsd":0.221,"change24hPct":16.51},{"symbol":"ZEC","rank":10,"priceUsd":1342.24,"change24hPct":12.73},{"symbol":"NEAR","rank":19,"priceUsd":5.37,"change24hPct":10.71}],"losers":[{"symbol":"BTW","rank":48,"priceUsd":1.47,"change24hPct":-21.94},{"symbol":"XMR","rank":13,"priceUsd":595.05,"change24hPct":-3.82},{"symbol":"DAI","rank":26,"priceUsd":0.9998,"change24hPct":-0.04}]}",
+    "role": "user",
+  },
+]
+`;

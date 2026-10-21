@@ -46,7 +46,11 @@ if (mode === "chat") {
   });
   const text = await stream.text();
   await writeFile("tests/fixtures/groq-chat-stream.sse", text);
-  console.log(stream.status, stream.headers.get("content-type"), `${text.split("\n\n").length} events`);
+  console.log(
+    stream.status,
+    stream.headers.get("content-type"),
+    `${text.split("\n\n").length} events`,
+  );
   process.exit(0);
 }
 

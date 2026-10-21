@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 
+import { AskAiButtonPlaceholder } from "@/components/ai/ask-ai-button";
 import { CoinTableSkeleton } from "@/components/market/coin-table-skeleton";
 import { DensityToggle } from "@/components/market/density-toggle";
 import { MarketPulseSkeleton } from "@/components/market/market-pulse-skeleton";
@@ -46,7 +47,12 @@ function TrendingSkeleton(): ReactNode {
 
 function AiBriefSkeleton(): ReactNode {
   return (
-    <Panel id="ai-brief" title="AI market brief" className="[grid-area:brief]">
+    <Panel
+      id="ai-brief"
+      title="AI market brief"
+      actions={<AskAiButtonPlaceholder />}
+      className="[grid-area:brief]"
+    >
       <div role="status" className="flex h-18 flex-col gap-2.5 overflow-hidden tablet:h-66">
         <span className="sr-only">Writing the brief</span>
         {[

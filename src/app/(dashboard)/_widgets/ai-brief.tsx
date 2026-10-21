@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import type { ReactNode } from "react";
 
+import { AskAiButton } from "@/components/ai/ask-ai-button";
 import { BriefText } from "@/components/ai/brief-text";
 import { DataMeta } from "@/components/data-state/data-meta";
 import { FreshnessRail } from "@/components/data-state/freshness-rail";
@@ -21,6 +22,7 @@ export async function AiBrief(): Promise<ReactNode> {
       title="AI market brief"
       meta={<DataMeta envelope={envelope} />}
       rail={<FreshnessRail {...envelope} />}
+      actions={<AskAiButton />}
       className="[grid-area:brief]"
     >
       {brief ? (

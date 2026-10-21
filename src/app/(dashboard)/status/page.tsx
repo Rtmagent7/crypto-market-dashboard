@@ -1,24 +1,42 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { connection } from "next/server";
+import { Suspense, type ReactNode } from "react";
 
+import { DataMeta } from "@/components/data-state/data-meta";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatusTable } from "@/components/status/status-table";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getStatusService } from "@/modules/status/status.service";
 
 export const metadata: Metadata = { title: "Status" };
+
+async function ProvidersPanel(): Promise<ReactNode> {
+  await connection(); // always live: what the guard enforces right now (spec §3: no-store)
+  const envelope = await getStatusService().getStatus();
+  return (
+    <Panel id="providers" title="Providers" meta={<DataMeta envelope={envelope} />}>
+      <StatusTable initial={envelope} />
+    </Panel>
+  );
+}
 
 export default function StatusPage(): ReactNode {
   return (
     <>
       <PageHeader title="Status">
-        Provider health and quota use, read from the same counters the guard enforces.
+        Read from the same counters the quota guard enforces. Every number on this dashboard is
+        cached so free API limits are never exceeded.
       </PageHeader>
-      <Panel id="status-main" title="Providers" meta="Not connected yet · arrives in Sprint 2">
-        <div className="flex h-64 flex-col gap-3">
-          <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="h-full w-full" />
-        </div>
-      </Panel>
+      <Suspense
+        fallback={
+          <Panel id="providers" title="Providers">
+            <Skeleton className="h-[520px] w-full rounded-control" />
+          </Panel>
+        }
+      >
+        <ProvidersPanel />
+      </Suspense>
     </>
   );
 }

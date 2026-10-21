@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-10-21T23:33:41.979Z",
+  "url": "https://api.worldbank.org/v2/country/IDN/indicator/NY.GDP.MKTP.KD.ZG;FP.CPI.TOTL.ZG;SL.UEM.TOTL.ZS;NY.GDP.PCAP.CD;BN.CAB.XOKA.GD.ZS?source=2&format=json&date=2010:2026&per_page=500",
+  "status": 200,
+  "keyless": null,
+  "headers": {
+    "age": "20",
+    "cache-control": "public, max-age=86400",
+    "cf-cache-status": "HIT",
+    "date": "Wed, 21 Oct 2026 23:33:41 GMT"
+  }
+}

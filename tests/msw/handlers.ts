@@ -10,6 +10,7 @@ import ffLatest from "../fixtures/frankfurter-latest.json";
 import ffRange from "../fixtures/frankfurter-range-1y.json";
 import tdQuote from "../fixtures/twelvedata-quote.json";
 import tdDaily from "../fixtures/twelvedata-time-series-1day.json";
+import groqSummary from "../fixtures/groq-summary.json";
 import tdHourly from "../fixtures/twelvedata-time-series-1h.json";
 
 // Provider mocks served from real captured responses (tests/fixtures). Used by Vitest and,
@@ -54,5 +55,9 @@ export const createProviderHandlers = (hits: HitCounter = new Map()): HttpHandle
       "https://open.er-api.com/v6/latest/USD",
       () => (hit("exchangerate:/latest"), HttpResponse.json(erLatest)),
     ),
+    http.post("https://api.groq.com/openai/v1/chat/completions", () => {
+      hit("groq:/chat/completions");
+      return HttpResponse.json(groqSummary);
+    }),
   ];
 };

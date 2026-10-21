@@ -17,6 +17,8 @@ export type { BudgetResult };
 export interface AiRepository {
   /** `messages` is only built when the cache actually needs a new brief. */
   summary(messages: () => Promise<ChatMessage[]>): Promise<BudgetResult<MarketBrief>>;
+  /** Ask AI: never cached; spends the separate `groq:chat` budget (global cap per day). */
+  ask(messages: ChatMessage[]): Promise<BudgetResult<ReadableStream<string>>>;
 }
 
 export const createAiRepository = ({
@@ -26,6 +28,16 @@ export const createAiRepository = ({
   callWithBudget: CallWithBudget;
   groq: GroqClient;
 }): AiRepository => ({
+  ask: (messages) =>
+    callWithBudget<ReadableStream<string>>({
+      budget: "groq:chat",
+      endpoint: "/chat/completions?stream",
+      cacheKey: "groq:chat",
+      cache: false,
+      policy: CACHE_POLICY["groq:summary"], // unused when cache is false
+      fetcher: (signal) =>
+        groq.chatStream({ model: AI.chatModel, messages, maxTokens: AI.maxTokens }, signal),
+    }),
   summary: (messages) =>
     callWithBudget<MarketBrief>({
       budget: "groq:summary",

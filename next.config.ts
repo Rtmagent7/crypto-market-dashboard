@@ -1,6 +1,8 @@
 import bundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 
+import { securityHeaders } from "./src/config/security-headers";
+
 const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
 
 const nextConfig: NextConfig = {
@@ -10,6 +12,9 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   output: "standalone",
   poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders(process.env.VERCEL_ENV) }];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "coin-images.coingecko.com" },

@@ -74,6 +74,7 @@ export const createStocksRepository = ({
       const result = await callWithBudget<TdQuoteBatch>({
         budget: "twelvedata",
         endpoint: "/quote",
+        cost: TICKERS.length, // 1 credit per symbol
         cacheKey: "twelvedata:quote",
         policy: (batch) => quotePolicy(batch, now()),
         fetcher: (signal) => twelvedata.quotes(TICKERS, signal),
@@ -85,6 +86,7 @@ export const createStocksRepository = ({
       callWithBudget<TdSeriesBatch>({
         budget: "twelvedata",
         endpoint: "/time_series?interval=1h",
+        cost: TICKERS.length,
         cacheKey: "twelvedata:series-1h",
         policy: () => hourlyPolicy(lastOpen, now()),
         fetcher: (signal) => twelvedata.series(TICKERS, "1h", 24, signal),
@@ -93,6 +95,7 @@ export const createStocksRepository = ({
       callWithBudget<TdSeriesBatch>({
         budget: "twelvedata",
         endpoint: "/time_series?interval=1day",
+        cost: TICKERS.length,
         cacheKey: "twelvedata:series-1day",
         policy: () => dailyPolicy(now()),
         fetcher: (signal) => twelvedata.series(TICKERS, "1day", 252, signal),

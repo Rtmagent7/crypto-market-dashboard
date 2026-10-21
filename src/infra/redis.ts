@@ -16,17 +16,17 @@ export const createRedisStore = (redis: Redis): KeyValueStore => ({
       : await redis.set(key, value, { px });
     return result === "OK";
   },
-  async incr(key, ttlSeconds) {
-    // INCR + EXPIRE NX in one round trip: the expiry starts with the counter and never slides.
+  async incr(key, ttlSeconds, by = 1) {
+    // INCRBY + EXPIRE NX in one round trip: the expiry starts with the counter and never slides.
     const [value] = await redis
       .pipeline()
-      .incr(key)
+      .incrby(key, by)
       .expire(key, ttlSeconds, "NX")
       .exec<[number, number]>();
     return value;
   },
-  async decr(key) {
-    return redis.decr(key);
+  async decr(key, by = 1) {
+    return redis.decrby(key, by);
   },
   async del(key) {
     await redis.del(key);

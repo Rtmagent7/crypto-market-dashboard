@@ -95,6 +95,7 @@ components:
         - exchangerate
         - groq
         - workers-ai
+        - internal
       description: Provider that actually served the data
     FxEnvelope:
       type: object
@@ -199,6 +200,97 @@ components:
           type: string
       required:
         - error
+    StatusEnvelope:
+      type: object
+      properties:
+        data:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/ProviderStatus"
+          description: null only when status is `unavailable`
+        status:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - unavailable
+        source:
+          $ref: "#/components/schemas/ProviderId"
+        fetchedAt:
+          type: string
+          format: date-time
+          description: When the data was fetched (ISO 8601)
+        nextRefreshAt:
+          type: string
+          format: date-time
+          description: Do not poll again before this time (ISO 8601)
+      required:
+        - data
+        - status
+        - source
+        - fetchedAt
+        - nextRefreshAt
+    ProviderStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          example: coingecko
+        name:
+          type: string
+          example: CoinGecko
+        role:
+          type: string
+          enum:
+            - core
+            - backup
+            - optional
+        serves:
+          type: string
+          example: Crypto prices
+        state:
+          type: string
+          enum:
+            - operational
+            - degraded
+            - down
+            - standby
+        reason:
+          type:
+            - string
+            - "null"
+        quotaUsed:
+          type: integer
+        quotaCap:
+          type: integer
+          description: Enforced cap (80% of the provider limit × BUDGET_CAP_RATIO)
+        quotaPeriod:
+          type: string
+          enum:
+            - day
+            - month
+        lastDataAt:
+          type:
+            - string
+            - "null"
+        fallbackActive:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - name
+        - role
+        - serves
+        - state
+        - reason
+        - quotaUsed
+        - quotaCap
+        - quotaPeriod
+        - lastDataAt
+        - fallbackActive
   parameters: {}
 paths:
   /api/market:
@@ -329,4 +421,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChartEnvelope"
+  /api/status:
+    get:
+      summary: Provider health and quota use
+      description: "Read live from the same Redis counters, circuit breakers and cache
+        entries the quota guard uses. Never cached (`Cache-Control: no-store`);
+        the page polls it every 60 s."
+      tags:
+        - status
+      responses:
+        "200":
+          description: Current provider status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusEnvelope"
+        "429":
+          description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
 webhooks: {}

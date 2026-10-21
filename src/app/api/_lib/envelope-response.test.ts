@@ -45,3 +45,11 @@ describe("envelopeResponse", () => {
     expect(res.headers.get("cache-control")).toContain("s-maxage=1,");
   });
 });
+
+describe("envelopeResponse — noStore", () => {
+  it("never lets the CDN keep live status responses", () => {
+    const res = envelopeResponse(envelope("fresh", 60), NOW, { noStore: true });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+});

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Suspense,
   useDeferredValue,
   useMemo,
   useRef,
@@ -18,6 +18,7 @@ import { isWhitelistedCoin } from "@/config/coins";
 import { formatCompactUsd, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CryptoAsset } from "@/modules/shared/domain";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useUiStore } from "@/stores/ui.store";
 
 import { ChangeCell } from "./change-cell";
@@ -45,6 +46,19 @@ const COLUMNS: readonly {
   },
 ];
 
+const HYDRATION_GROUP = 10;
+/**
+ * Rows visible in the fixed table viewport. Only these are in the server HTML and hydrate on
+ * load; the rest render right after hydration as a separate task (TBT), below the fold, inside
+ * the fixed-height scroll area (no layout shift).
+ */
+const FIRST_PAINT_ROWS = 15;
+
+const chunk = <T,>(items: readonly T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
+    items.slice(i * size, (i + 1) * size),
+  );
+
 /** Table body height is fixed so the swap from skeleton to data never shifts layout (CLS). */
 export const TABLE_VIEWPORT = "h-[560px] desktop:h-[724px]";
 
@@ -64,10 +78,12 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
   const density = useUiStore((s) => s.density);
   const [sort, setSort] = useState<Sort>({ key: "rank", dir: "asc" });
   const deferredSort = useDeferredValue(sort); // keeps INP low while 50 rows re-sort
-  const rows = useMemo(
+  const sorted = useMemo(
     () => [...coins].sort((a, b) => compare(a, b, deferredSort)),
     [coins, deferredSort],
   );
+  const hydrated = useHydrated();
+  const rows = hydrated ? sorted : sorted.slice(0, FIRST_PAINT_ROWS);
   const tbody = useRef<HTMLTableSectionElement>(null);
   const router = useRouter();
   const [focusIndex, setFocusIndex] = useState(0);
@@ -115,6 +131,71 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
 
   const rowHeight = density === "compact" ? "h-9" : "h-12";
 
+  const renderRow = (c: CryptoAsset, i: number): ReactNode => {
+    const href = isWhitelistedCoin(c.id) ? `/coins/${c.id}` : undefined;
+    return (
+      <tr
+        key={c.id}
+        data-href={href}
+        tabIndex={i === focusIndex ? 0 : -1}
+        onFocus={() => setFocusIndex(i)}
+        className={cn(
+          rowHeight,
+          href ? "cursor-pointer" : "cursor-default",
+          "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+        )}
+      >
+        <td className="px-2 text-muted tabular-nums">{c.rank || "—"}</td>
+        <th scope="row" className="max-w-0 px-2 text-left font-normal">
+          <div className="flex min-w-0 items-center gap-2">
+            {/* Plain <img> on purpose: 50 next/image instances in this client tree cost more
+                hydration time than optimizing 20 px icons saves (Lighthouse TBT). Fixed size, lazy. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={c.imageUrl}
+              alt=""
+              width={20}
+              height={20}
+              loading={i < 15 ? "eager" : "lazy"}
+              decoding="async"
+              className="size-5 shrink-0 rounded-full"
+            />
+            {/* Narrow containers (phones) lead with the symbol; the name stays for AT. */}
+            {href ? (
+              <Link
+                href={href}
+                tabIndex={-1}
+                className="truncate font-medium hover:underline hover:underline-offset-2 @max-[30rem]:sr-only"
+                title={c.name}
+              >
+                {c.name}
+              </Link>
+            ) : (
+              <span className="truncate font-medium @max-[30rem]:sr-only" title={c.name}>
+                {c.name}
+              </span>
+            )}
+            <span className="shrink-0 text-meta text-muted @max-[30rem]:text-cell @max-[30rem]:font-medium @max-[30rem]:text-text">
+              {c.symbol}
+            </span>
+          </div>
+        </th>
+        <td className="px-2 text-right font-medium whitespace-nowrap tabular-nums">
+          {formatUsd(c.priceUsd)}
+        </td>
+        <td className="px-2 text-right tabular-nums">
+          <ChangeCell pct={c.change24hPct} />
+        </td>
+        <td className="px-2 text-right @max-[30rem]:hidden">
+          <Sparkline values={c.sparkline7d} />
+        </td>
+        <td className="px-2 text-right whitespace-nowrap tabular-nums @max-[38rem]:hidden">
+          {formatCompactUsd(c.marketCapUsd)}
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <div className={cn("overflow-auto", TABLE_VIEWPORT)}>
       <table className="w-full border-collapse text-cell">
@@ -161,65 +242,13 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
           </tr>
         </thead>
         <tbody ref={tbody} onKeyDown={onKeyDown} onClick={onClick}>
-          {rows.map((c, i) => {
-            const href = isWhitelistedCoin(c.id) ? `/coins/${c.id}` : undefined;
-            return (
-              <tr
-                key={c.id}
-                data-href={href}
-                tabIndex={i === focusIndex ? 0 : -1}
-                onFocus={() => setFocusIndex(i)}
-                className={cn(
-                  rowHeight,
-                  href ? "cursor-pointer" : "cursor-default",
-                  "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-                )}
-              >
-                <td className="px-2 text-muted tabular-nums">{c.rank || "—"}</td>
-                <th scope="row" className="max-w-0 px-2 text-left font-normal">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Image
-                      src={c.imageUrl}
-                      alt=""
-                      width={20}
-                      height={20}
-                      className="size-5 shrink-0 rounded-full"
-                    />
-                    {/* Narrow containers (phones) lead with the symbol; the name stays for AT. */}
-                    {href ? (
-                      <Link
-                        href={href}
-                        tabIndex={-1}
-                        className="truncate font-medium hover:underline hover:underline-offset-2 @max-[30rem]:sr-only"
-                        title={c.name}
-                      >
-                        {c.name}
-                      </Link>
-                    ) : (
-                      <span className="truncate font-medium @max-[30rem]:sr-only" title={c.name}>
-                        {c.name}
-                      </span>
-                    )}
-                    <span className="shrink-0 text-meta text-muted @max-[30rem]:text-cell @max-[30rem]:font-medium @max-[30rem]:text-text">
-                      {c.symbol}
-                    </span>
-                  </div>
-                </th>
-                <td className="px-2 text-right font-medium whitespace-nowrap tabular-nums">
-                  {formatUsd(c.priceUsd)}
-                </td>
-                <td className="px-2 text-right tabular-nums">
-                  <ChangeCell pct={c.change24hPct} />
-                </td>
-                <td className="px-2 text-right @max-[30rem]:hidden">
-                  <Sparkline values={c.sparkline7d} />
-                </td>
-                <td className="px-2 text-right whitespace-nowrap tabular-nums @max-[38rem]:hidden">
-                  {formatCompactUsd(c.marketCapUsd)}
-                </td>
-              </tr>
-            );
-          })}
+          {/* Rows hydrate in groups: each Suspense boundary is its own task, so hydration
+              yields to the main thread between groups instead of one long blocking task. */}
+          {chunk(rows, HYDRATION_GROUP).map((group, g) => (
+            <Suspense key={g} fallback={null}>
+              {group.map((c, j) => renderRow(c, g * HYDRATION_GROUP + j))}
+            </Suspense>
+          ))}
         </tbody>
       </table>
     </div>

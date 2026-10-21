@@ -9,12 +9,11 @@ describe("IndicatorTable", () => {
   it("is a real table: caption, column headers and one row header per indicator", () => {
     render(<IndicatorTable indicators={fixtureIndicators()} />);
     const table = screen.getByRole("table", { name: /indonesia macro indicators/i });
-    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual([
-      "Indicator",
-      "Latest",
-      "Year before",
-      "Since 2010",
-    ]);
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Indicator", "Latest", "Year before", "Since 2010"]);
     expect(within(table).getAllByRole("rowheader")).toHaveLength(5);
   });
 

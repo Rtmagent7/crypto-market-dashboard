@@ -33,6 +33,9 @@ export const RESILIENCE = {
   retryDelaysMs: [500, 1_500],
   retryJitterMs: 250,
   lockMs: 15_000,
+  /** With no cache yet, a concurrent request waits this long for the in-flight call. */
+  lockWaitMs: 2_000,
+  lockPollMs: 100,
   breakerThreshold: 5,
   breakerWindowSeconds: 300,
   breakerOpenSeconds: 600,

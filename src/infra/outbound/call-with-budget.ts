@@ -4,6 +4,7 @@ import type { KeyValueStore } from "@/infra/store";
 
 import { BUDGETS, RESILIENCE, type BudgetKey } from "./budgets";
 import { minuteKey, periodKey, periodTtlSeconds } from "./day-key";
+import { scopedKeys, sharedKeys, type CacheEntry } from "./keys";
 import { ContractError, ProviderHttpError, ProviderTimeoutError, isRetryable } from "./errors";
 
 /**
@@ -52,42 +53,17 @@ export interface CallWithBudgetDeps {
    * circuit breakers and cooldowns stay shared because both use the same provider keys.
    */
   namespace?: string;
-}
-
-interface CacheEntry<T> {
-  data: T;
-  fetchedAt: number;
-  expiresAt: number;
+  /** How long a request with nothing cached waits for another request's in-flight call. */
+  lockWaitMs?: number;
 }
 
 type Attempt<T> = { ok: true; data: T } | { ok: false; reason: SkipReason; error: unknown };
-
-const sharedKeys = {
-  quota: (budget: BudgetKey, period: string): string => `quota:${budget}:${period}`,
-  minute: (budget: BudgetKey, minute: string): string => `quota:${budget}:m:${minute}`,
-  cooldown: (budget: BudgetKey): string => `cooldown:${budget}`,
-  breakerFails: (budget: BudgetKey): string => `cb:${budget}:fails`,
-  breakerOpen: (budget: BudgetKey): string => `cb:${budget}:open`,
-};
 
 const statusOf = (err: unknown): string | number => {
   if (err instanceof ProviderHttpError) return err.status;
   if (err instanceof ProviderTimeoutError) return "timeout";
   if (err instanceof ContractError) return "contract-error";
   return "error";
-};
-
-interface ScopedKeys {
-  cache: (cacheKey: string) => string;
-  lock: (cacheKey: string) => string;
-}
-
-const scopedKeys = (namespace: string | undefined): ScopedKeys => {
-  const ns = namespace ? `${namespace}:` : "";
-  return {
-    cache: (cacheKey: string): string => `cache:${ns}${cacheKey}`,
-    lock: (cacheKey: string): string => `lock:${ns}${cacheKey}`,
-  };
 };
 
 export type CallWithBudget = <T>(call: BudgetedCall<T>) => Promise<BudgetResult<T>>;
@@ -102,6 +78,7 @@ export const createCallWithBudget = ({
   timeoutMs = RESILIENCE.timeoutMs,
   retryDelaysMs = RESILIENCE.retryDelaysMs,
   namespace,
+  lockWaitMs = RESILIENCE.lockWaitMs,
 }: CallWithBudgetDeps): CallWithBudget => {
   const keys = { ...sharedKeys, ...scopedKeys(namespace) };
   const capOf = (budget: BudgetKey): { cap: number; perMinute: number } => ({
@@ -226,6 +203,14 @@ export const createCallWithBudget = ({
     const token = `${now()}-${random()}`;
     const lockKey = keys.lock(call.cacheKey);
     if (!(await store.set(lockKey, token, { px: RESILIENCE.lockMs, nx: true }))) {
+      if (cached) return degrade("locked");
+      // Cold cache: wait briefly for the in-flight call rather than failing (or, worse, sending
+      // this request to a backup provider while the primary is answering).
+      for (let waited = 0; waited < lockWaitMs; waited += RESILIENCE.lockPollMs) {
+        await sleep(RESILIENCE.lockPollMs);
+        const landed = await store.get<CacheEntry<T>>(keys.cache(call.cacheKey));
+        if (landed) return { status: "fresh", ...landed, cacheHit: true };
+      }
       return degrade("locked");
     }
 

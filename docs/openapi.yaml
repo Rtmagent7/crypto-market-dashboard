@@ -291,6 +291,66 @@ components:
         - quotaPeriod
         - lastDataAt
         - fallbackActive
+    StocksEnvelope:
+      type: object
+      properties:
+        data:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/StockQuote"
+          description: null only when status is `unavailable`
+        status:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - unavailable
+        source:
+          $ref: "#/components/schemas/ProviderId"
+        fetchedAt:
+          type: string
+          format: date-time
+          description: When the data was fetched (ISO 8601)
+        nextRefreshAt:
+          type: string
+          format: date-time
+          description: Do not poll again before this time (ISO 8601)
+      required:
+        - data
+        - status
+        - source
+        - fetchedAt
+        - nextRefreshAt
+    StockQuote:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: AAPL
+        name:
+          type: string
+          example: Apple Inc.
+        price:
+          type: number
+        change:
+          type: number
+        changePct:
+          type: number
+        isMarketOpen:
+          type: boolean
+        asOf:
+          type: string
+          description: Time of the last trade (ISO 8601)
+      required:
+        - symbol
+        - name
+        - price
+        - change
+        - changePct
+        - isMarketOpen
+        - asOf
   parameters: {}
 paths:
   /api/market:
@@ -438,4 +498,33 @@ paths:
                 $ref: "#/components/schemas/StatusEnvelope"
         "429":
           description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
+  /api/stocks:
+    get:
+      summary: US watchlist quotes (8 tickers)
+      description: Twelve Data, refreshed at :00/:20/:40 while the market is open and
+        at most every 6 h when closed — decided from `is_market_open` in the
+        response, never from the server clock.
+      tags:
+        - stocks
+      responses:
+        "200":
+          description: Fresh or stale quotes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StocksEnvelope"
+        "429":
+          description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
+        "503":
+          description: No cached data and no provider can be called (budget, breaker or
+            outage).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StocksEnvelope"
 webhooks: {}

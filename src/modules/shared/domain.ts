@@ -10,6 +10,7 @@ export type ProviderId =
   | "exchangerate"
   | "groq"
   | "workers-ai"
+  | "worldbank"
   /** Data computed by this app itself (e.g. /api/status reads its own Redis counters). */
   | "internal";
 
@@ -114,6 +115,17 @@ export interface ProviderStatus {
 }
 
 export type StockSeriesRange = "1d" | "1y";
+
+/** One annual macro indicator for one country (World Bank WDI). */
+export interface MacroIndicator {
+  /** Provider indicator code, e.g. "FP.CPI.TOTL.ZG". */
+  id: string;
+  label: string;
+  unit: "percent" | "usd";
+  description: string;
+  /** Published annual values, oldest first; `t` is the year (YYYY). Unpublished years are left out. */
+  history: PricePoint[];
+}
 
 export interface MarketBrief {
   /** Plain text, at most ~120 words. Rendered as text, never HTML. */

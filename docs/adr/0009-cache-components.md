@@ -36,3 +36,18 @@ truth for provider freshness; the Next.js cache only avoids re-rendering.
   it is absent.
 - Alternative if rejected: set `cacheComponents: false` and use the previous caching model
   exactly as the brief describes. Nothing in Phase 1 depends on either choice.
+
+## Amendment (2026-10-22, Overview with live data)
+
+Implementation showed that `'use cache'` on data functions runs during prerendering, i.e.
+inside `next build` — on Vercel that spends real quota, and in CI (`MOCK_PROVIDERS=1`, no
+MSW during build) it would reach real providers, breaking the "never call providers from
+CI" rule. Data widgets therefore:
+
+1. call `await connection()` (request-time only) and read through the service → Redis;
+2. sit behind their own `<Suspense>` with a fixed-size skeleton.
+
+The route is Partial Prerendered (◐): the shell with skeletons is static, widgets stream in
+the same response. Redis (`callWithBudget`) remains the only data cache, and `/api/*`
+responses use `s-maxage` so Vercel's CDN absorbs polling. `'use cache'` stays available for
+data that is safe to compute at build time (none yet).

@@ -53,3 +53,21 @@ export interface FxRates {
   date: string;
   rates: Record<string, number>;
 }
+
+export interface GlobalMarket {
+  totalMarketCapUsd: number;
+  marketCapChange24hPct: number;
+  btcDominancePct: number | null;
+  /** null when the provider reports an implausible value (see market.mapper.ts). */
+  volume24hUsd: number | null;
+}
+
+export interface TrendingCoin {
+  id: string;
+  symbol: string;
+  name: string;
+  thumbUrl: string;
+  rank: number | null;
+  priceUsd: number;
+  change24hPct: number | null;
+}

@@ -10,6 +10,8 @@ const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     MOCK_PROVIDERS: z.enum(["0", "1"]).default("0"),
+    /** Set by Vercel; namespaces cache keys so Preview never shares a cache with Production. */
+    VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
     BUDGET_CAP_RATIO: z.coerce.number().gt(0).max(1).default(1),
 
     COINGECKO_API_KEY: optional,

@@ -46,6 +46,12 @@ export interface CallWithBudgetDeps {
   capRatio?: number;
   timeoutMs?: number;
   retryDelaysMs?: readonly number[];
+  /**
+   * Prefix for cache and lock keys (VERCEL_ENV). Production and Preview share one Redis:
+   * caches stay separate so a preview can never poison production, while quota counters,
+   * circuit breakers and cooldowns stay shared because both use the same provider keys.
+   */
+  namespace?: string;
 }
 
 interface CacheEntry<T> {
@@ -56,9 +62,7 @@ interface CacheEntry<T> {
 
 type Attempt<T> = { ok: true; data: T } | { ok: false; reason: SkipReason; error: unknown };
 
-const keys = {
-  cache: (cacheKey: string): string => `cache:${cacheKey}`,
-  lock: (cacheKey: string): string => `lock:${cacheKey}`,
+const sharedKeys = {
   quota: (budget: BudgetKey, period: string): string => `quota:${budget}:${period}`,
   minute: (budget: BudgetKey, minute: string): string => `quota:${budget}:m:${minute}`,
   cooldown: (budget: BudgetKey): string => `cooldown:${budget}`,
@@ -73,6 +77,19 @@ const statusOf = (err: unknown): string | number => {
   return "error";
 };
 
+interface ScopedKeys {
+  cache: (cacheKey: string) => string;
+  lock: (cacheKey: string) => string;
+}
+
+const scopedKeys = (namespace: string | undefined): ScopedKeys => {
+  const ns = namespace ? `${namespace}:` : "";
+  return {
+    cache: (cacheKey: string): string => `cache:${ns}${cacheKey}`,
+    lock: (cacheKey: string): string => `lock:${ns}${cacheKey}`,
+  };
+};
+
 export type CallWithBudget = <T>(call: BudgetedCall<T>) => Promise<BudgetResult<T>>;
 
 export const createCallWithBudget = ({
@@ -84,7 +101,9 @@ export const createCallWithBudget = ({
   capRatio = 1,
   timeoutMs = RESILIENCE.timeoutMs,
   retryDelaysMs = RESILIENCE.retryDelaysMs,
+  namespace,
 }: CallWithBudgetDeps): CallWithBudget => {
+  const keys = { ...sharedKeys, ...scopedKeys(namespace) };
   const capOf = (budget: BudgetKey): { cap: number; perMinute: number } => ({
     cap: Math.max(1, Math.floor(BUDGETS[budget].cap * capRatio)),
     perMinute: BUDGETS[budget].perMinute,

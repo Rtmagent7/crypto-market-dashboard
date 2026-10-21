@@ -1,10 +1,13 @@
 {
-  "capturedAt": "2026-10-21T14:14:37.400Z",
-  "url": "https://api.twelvedata.com/time_series?symbol=AAPL&interval=1day&outputsize=252&apikey=demo",
+  "capturedAt": "2026-10-21T15:59:39.148Z",
+  "url": "https://api.twelvedata.com/time_series?symbol=AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA,SPY&interval=1day&outputsize=252&apikey=<redacted>",
   "status": 200,
-  "keyless": "demo key, single symbol — recapture batch with a real key",
+  "keyless": null,
   "headers": {
+    "api-credits-left": "0",
+    "api-credits-request": "8",
+    "api-credits-used": "8",
     "cf-cache-status": "DYNAMIC",
-    "date": "Wed, 21 Oct 2026 14:14:37 GMT"
+    "date": "Wed, 21 Oct 2026 15:59:38 GMT"
   }
 }

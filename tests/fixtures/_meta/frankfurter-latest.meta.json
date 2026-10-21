@@ -1,12 +1,11 @@
 {
-  "capturedAt": "2026-10-21T14:14:46.493Z",
+  "capturedAt": "2026-10-21T16:00:44.457Z",
   "url": "https://api.frankfurter.dev/v1/latest?from=USD",
   "status": 200,
   "keyless": null,
   "headers": {
-    "age": "554",
     "cache-control": "public, max-age=86400",
-    "cf-cache-status": "HIT",
-    "date": "Wed, 21 Oct 2026 14:14:46 GMT"
+    "cf-cache-status": "MISS",
+    "date": "Wed, 21 Oct 2026 16:00:44 GMT"
   }
 }

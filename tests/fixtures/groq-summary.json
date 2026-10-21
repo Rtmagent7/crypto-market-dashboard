@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-973897c9-213e-4772-9205-be01c3fceb20",
+  "object": "chat.completion",
+  "created": 1792607231,
+  "model": "openai/gpt-oss-120b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The global crypto market cap stands at $2.84 trillion, down 1.36 % over the past 24 hours, with a 24‑hour trading volume of $83 billion. Bitcoin’s share of the market remains at 59.6 % dominance. The USD/IDR exchange rate is 18,043, up 0.32 % in one day. Among the top ten assets, Bitcoin trades at $84,456 (+2.39 %), Ethereum at $2,511.65 (+3.04 %), and ZEC leads the biggest gainers at $1,342.24 (+12.73 %). Other notable gainers include ENA (+16.51 %) and NEAR (+10.71 %). The largest decliner is BTW at $1.47, down 21.94 %, followed by XMR (-3.82 %) and DAI (-0.04 %). This information is for educational purposes only."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.346099077,
+    "prompt_tokens": 666,
+    "prompt_time": 0.031345319,
+    "completion_tokens": 307,
+    "completion_time": 0.644395836,
+    "total_tokens": 973,
+    "total_time": 0.675741155,
+    "completion_tokens_details": {
+      "reasoning_tokens": 91
+    }
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_64b2f1c926",
+  "x_groq": {
+    "id": "req_01m5fvf61eek5r86bgynwe6wz1",
+    "seed": 123771231
+  },
+  "service_tier": "on_demand"
+}

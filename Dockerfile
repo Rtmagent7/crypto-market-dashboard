@@ -1,19 +1,19 @@
 # syntax=docker/dockerfile:1.7
 # Multi-stage build: deps → build → runtime (non-root, Next.js standalone output).
 
-FROM node:24-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:24-alpine AS runtime
+FROM node:25-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

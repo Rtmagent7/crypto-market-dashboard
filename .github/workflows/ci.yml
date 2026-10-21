@@ -126,18 +126,13 @@ jobs:
       - run: npx lhci autorun
       - name: Scores
         if: always()
-        run: |
-          for f in .lighthouseci/lhr-*.json; do
-            node -e 'const r=require(process.argv[1]); const c=r.categories, a=r.audits;
-              console.log(r.finalDisplayedUrl.replace(/^https?:\/\/[^/]+/, ""), "perf", Math.round(c.performance.score*100),
-                "a11y", Math.round(c.accessibility.score*100), "LCP", a["largest-contentful-paint"].displayValue,
-                "TBT", a["total-blocking-time"].displayValue, "CLS", a["cumulative-layout-shift"].displayValue)' "$f"
-          done
+        run: node scripts/lighthouse-summary.mjs .lighthouseci
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: lighthouse
           path: .lighthouseci/
+          include-hidden-files: true
           if-no-files-found: ignore
 
   audit:

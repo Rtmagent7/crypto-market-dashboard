@@ -1,7 +1,6 @@
 import { connection } from "next/server";
 
-import { createMarketService } from "@/modules/market/market.service";
-import { getMarketRepository } from "@/modules/market/market.repository";
+import { getMarketService } from "@/modules/market/market.service";
 import type { CryptoAsset, DataEnvelope } from "@/modules/shared/domain";
 
 import { envelopeResponse } from "../_lib/envelope-response";
@@ -11,8 +10,6 @@ export async function GET(): Promise<Response> {
   // Request-time only: with Cache Components a GET handler would otherwise be prerendered,
   // which would call the provider at build time.
   await connection();
-  const envelope: DataEnvelope<CryptoAsset[]> = await createMarketService({
-    repository: getMarketRepository(),
-  }).getTopCoins();
+  const envelope: DataEnvelope<CryptoAsset[]> = await getMarketService().getTopCoins();
   return envelopeResponse(envelope);
 }

@@ -7,7 +7,7 @@ import type {
 import { toEnvelope } from "@/modules/shared/envelope";
 
 import { fromCoinGecko, fromCoinGeckoGlobal, fromCoinGeckoTrending } from "./market.mapper";
-import type { MarketRepository } from "./market.repository";
+import { getMarketRepository, type MarketRepository } from "./market.repository";
 
 export interface MarketService {
   getTopCoins(): Promise<DataEnvelope<CryptoAsset[]>>;
@@ -45,3 +45,9 @@ export const createMarketService = ({
       now: now(),
     }),
 });
+
+let service: MarketService | undefined;
+
+/** Process-wide service for route handlers and Server Components. */
+export const getMarketService = (): MarketService =>
+  (service ??= createMarketService({ repository: getMarketRepository() }));

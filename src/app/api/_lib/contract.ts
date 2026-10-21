@@ -277,3 +277,49 @@ registry.registerPath({
     503: unavailable(BriefEnvelopeSchema),
   },
 });
+
+registry.registerPath({
+  method: "post",
+  path: "/api/ai/chat",
+  summary: "Ask AI about the current market (streamed)",
+  description:
+    "Answers from the same cached market data as the brief; the question is treated as " +
+    "untrusted data, never as instructions. Same-origin browser requests only. Limits: 30/min " +
+    "and 5 questions/day per hashed IP, 100/day across all visitors. The response is " +
+    "`text/event-stream`: `delta` events `{text}`, then one `done` event `{text, remaining}` " +
+    "with the cleaned answer, or an `error` event `{error}`. Not financial advice.",
+  tags: ["ai"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z
+            .object({ question: z.string().min(3).max(500) })
+            .openapi("AskQuestion", { example: { question: "Why is Bitcoin dominance rising?" } }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Server-sent events stream.",
+      content: { "text/event-stream": { schema: z.string() } },
+    },
+    400: {
+      description: "Question missing, shorter than 3 or longer than 500 characters.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    403: {
+      description: "Not a same-origin browser request.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    429: {
+      description: "Per-minute or daily per-IP limit reached. Retry after `Retry-After` seconds.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    503: {
+      description: "No market data, daily budget used, or the AI provider is down.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+  },
+});

@@ -13,8 +13,16 @@ export function SiteFooter(): ReactNode {
         >
           CoinGecko
         </a>
-        . Stocks by Twelve Data, FX by Frankfurter. Prices are cached to protect free API quotas and
-        may be minutes old.
+        . Stocks by Twelve Data, FX by Frankfurter, macro indicators by the{" "}
+        <a
+          href="https://data.worldbank.org/"
+          className="text-accent underline underline-offset-2 hover:decoration-2"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          World Bank
+        </a>{" "}
+        (CC BY 4.0). Prices are cached to protect free API quotas and may be minutes old.
       </p>
       <p className="mt-1">Educational information only, not financial advice.</p>
     </footer>

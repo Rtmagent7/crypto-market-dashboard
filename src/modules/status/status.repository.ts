@@ -20,7 +20,9 @@ export const createStatusRepository = ({
   env,
 }: {
   store: KeyValueStore;
-  env: Pick<Env, "BUDGET_CAP_RATIO" | "VERCEL_ENV" | "NODE_ENV"> & Partial<Record<string, unknown>>;
+  env: Pick<Env, "BUDGET_CAP_RATIO" | "VERCEL_ENV" | "NODE_ENV"> &
+    Partial<Pick<Env, "MOCK_PROVIDERS">> &
+    Partial<Record<string, unknown>>;
 }): StatusRepository => {
   const cacheKeys = scopedKeys(env.VERCEL_ENV ?? env.NODE_ENV);
   return {
@@ -42,7 +44,8 @@ export const createStatusRepository = ({
               breakerOpen: Boolean(open),
               cooldown: Boolean(cooldown),
               fetchedAt: entry?.fetchedAt ?? null,
-              configured: p.keyEnv === null || Boolean(env[p.keyEnv]),
+              // Mock mode serves every provider from fixtures, so none of them needs a key there.
+              configured: env.MOCK_PROVIDERS === "1" || p.keyEnv === null || Boolean(env[p.keyEnv]),
               quotaCap: Math.max(1, Math.floor(BUDGETS[budget].cap * env.BUDGET_CAP_RATIO)),
               quotaPeriod: period,
             },

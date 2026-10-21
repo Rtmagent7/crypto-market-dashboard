@@ -6,6 +6,7 @@ import type {
   CryptoAsset,
   DataEnvelope,
   FxRates,
+  MacroIndicator,
   PricePoint,
   ProviderStatus,
   StockQuote,
@@ -134,6 +135,20 @@ export const FxRatesSchema = z
 
 export const FxEnvelopeSchema = envelope("FxEnvelope", FxRatesSchema);
 
+export const MacroIndicatorSchema = z
+  .object({
+    id: z.string().openapi({ example: "FP.CPI.TOTL.ZG", description: "World Bank indicator code" }),
+    label: z.string().openapi({ example: "Inflation" }),
+    unit: z.enum(["percent", "usd"]),
+    description: z.string().openapi({ example: "Consumer prices, annual change" }),
+    history: z.array(PricePointSchema).openapi({
+      description: "Published annual values, oldest first; `t` is the year (YYYY)",
+    }),
+  })
+  .openapi("MacroIndicator");
+
+export const MacroEnvelopeSchema = envelope("MacroEnvelope", z.array(MacroIndicatorSchema));
+
 // Compile-time guard: the documented contract must equal the domain model exactly.
 type Equals<A, B> =
   (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2 ? true : false;
@@ -150,6 +165,8 @@ assertContract<Equals<z.infer<typeof ProviderStatusSchema>, ProviderStatus>>();
 assertContract<Equals<z.infer<typeof StatusEnvelopeSchema>, DataEnvelope<ProviderStatus[]>>>();
 assertContract<Equals<z.infer<typeof ChartEnvelopeSchema>, DataEnvelope<PricePoint[]>>>();
 assertContract<Equals<z.infer<typeof FxEnvelopeSchema>, DataEnvelope<FxRates>>>();
+assertContract<Equals<z.infer<typeof MacroIndicatorSchema>, MacroIndicator>>();
+assertContract<Equals<z.infer<typeof MacroEnvelopeSchema>, DataEnvelope<MacroIndicator[]>>>();
 
 export const registry = new OpenAPIRegistry();
 
@@ -192,6 +209,25 @@ registry.registerPath({
     },
     429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
     503: unavailable(FxEnvelopeSchema),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/macro",
+  summary: "Indonesia macro indicators (annual)",
+  description:
+    "Five World Bank indicators for Indonesia (GDP growth, inflation, unemployment, GDP per " +
+    "capita, current account), one provider call per 7-day TTL. No backup provider: stale " +
+    "data is served while the World Bank is unreachable.",
+  tags: ["macro"],
+  responses: {
+    200: {
+      description: "Fresh or stale indicators.",
+      content: { "application/json": { schema: MacroEnvelopeSchema } },
+    },
+    429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
+    503: unavailable(MacroEnvelopeSchema),
   },
 });
 

@@ -95,6 +95,7 @@ components:
         - exchangerate
         - groq
         - workers-ai
+        - worldbank
         - internal
       description: Provider that actually served the data
     FxEnvelope:
@@ -150,6 +151,78 @@ components:
         - date
         - rates
       description: null only when status is `unavailable`
+    MacroEnvelope:
+      type: object
+      properties:
+        data:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/MacroIndicator"
+          description: null only when status is `unavailable`
+        status:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - unavailable
+        source:
+          $ref: "#/components/schemas/ProviderId"
+        fetchedAt:
+          type: string
+          format: date-time
+          description: When the data was fetched (ISO 8601)
+        nextRefreshAt:
+          type: string
+          format: date-time
+          description: Do not poll again before this time (ISO 8601)
+      required:
+        - data
+        - status
+        - source
+        - fetchedAt
+        - nextRefreshAt
+    MacroIndicator:
+      type: object
+      properties:
+        id:
+          type: string
+          example: FP.CPI.TOTL.ZG
+          description: World Bank indicator code
+        label:
+          type: string
+          example: Inflation
+        unit:
+          type: string
+          enum:
+            - percent
+            - usd
+        description:
+          type: string
+          example: Consumer prices, annual change
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/PricePoint"
+          description: Published annual values, oldest first; `t` is the year (YYYY)
+      required:
+        - id
+        - label
+        - unit
+        - description
+        - history
+    PricePoint:
+      type: object
+      properties:
+        t:
+          type: string
+          description: ISO 8601 time, or YYYY-MM-DD for daily series
+        v:
+          type: number
+      required:
+        - t
+        - v
     ChartEnvelope:
       type: object
       properties:
@@ -182,17 +255,6 @@ components:
         - source
         - fetchedAt
         - nextRefreshAt
-    PricePoint:
-      type: object
-      properties:
-        t:
-          type: string
-          description: ISO 8601 time, or YYYY-MM-DD for daily series
-        v:
-          type: number
-      required:
-        - t
-        - v
     Error:
       type: object
       properties:
@@ -467,6 +529,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FxEnvelope"
+  /api/macro:
+    get:
+      summary: Indonesia macro indicators (annual)
+      description: "Five World Bank indicators for Indonesia (GDP growth, inflation,
+        unemployment, GDP per capita, current account), one provider call per
+        7-day TTL. No backup provider: stale data is served while the World Bank
+        is unreachable."
+      tags:
+        - macro
+      responses:
+        "200":
+          description: Fresh or stale indicators.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MacroEnvelope"
+        "429":
+          description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
+        "503":
+          description: No cached data and no provider can be called (budget, breaker or
+            outage).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MacroEnvelope"
   /api/coins/{id}/chart:
     get:
       summary: Price history for a whitelisted coin

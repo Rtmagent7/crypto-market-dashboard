@@ -17,6 +17,7 @@ const CAPS: Record<string, Pick<RawProviderState, "quotaCap" | "quotaPeriod">> =
   exchangerate: { quotaCap: 1_200, quotaPeriod: "month" },
   "groq:summary": { quotaCap: 800, quotaPeriod: "day" },
   "workers-ai": { quotaCap: 40, quotaPeriod: "day" },
+  worldbank: { quotaCap: 50, quotaPeriod: "day" },
 };
 
 const healthy = (fetchedAgoSec: number | null, used = 10): Partial0 => ({
@@ -39,6 +40,7 @@ const base = (
     exchangerate: healthy(null, 0),
     "groq:summary": healthy(1_800),
     "workers-ai": { ...healthy(null, 0), configured: false },
+    worldbank: healthy(null, 0),
   };
   return Object.fromEntries(
     Object.entries(rows).map(([id, r]) => [id, { ...r, ...CAPS[id]!, ...overrides[id] }]),
@@ -117,6 +119,19 @@ describe("computeStatuses (spec 10.6)", () => {
     expect(byId(rows, "frankfurter").fallbackActive).toBe("ExchangeRate-API");
     expect(byId(rows, "exchangerate").state).toBe("operational");
     expect(byId(rows, "coingecko").fallbackActive).toBeNull();
+  });
+
+  it("lists the optional World Bank source; before the first /macro visit it is on standby", () => {
+    const rows = computeStatuses(base(), { now: NOW });
+    expect(rows.at(-1)).toMatchObject({ id: "worldbank", name: "World Bank", role: "optional" });
+    expect(byId(rows, "worldbank")).toMatchObject({
+      state: "standby",
+      reason: expect.stringMatching(/first visit/i),
+    });
+    const later = computeStatuses(base({ worldbank: { fetchedAt: NOW - 86_400_000 } }), {
+      now: NOW,
+    });
+    expect(byId(later, "worldbank").state).toBe("operational");
   });
 
   it("reports when a provider last delivered data", () => {

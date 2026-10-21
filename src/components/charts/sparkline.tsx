@@ -8,12 +8,18 @@ const W = 96;
 const H = 28;
 const TONE = { up: "text-up", down: "text-down", flat: "text-muted" } as const;
 
-/** 96×28 pure-SVG 7-day sparkline (spec 9A): 1.5 px stroke, no fill or axes, end dot. */
+/** 96×28 pure-SVG sparkline (spec 9A): 1.5 px stroke, no fill or axes, end dot. */
 export function Sparkline({
   values,
+  period = "7-day",
+  label,
   className,
 }: {
   values: readonly number[];
+  /** Spoken as "<period> trend: up 4.2%". */
+  period?: string;
+  /** Replaces the computed name, e.g. for rates where a percent change would mislead. */
+  label?: string;
   className?: string;
 }): ReactNode {
   const g = sparklineGeometry(values, W, H);
@@ -25,17 +31,19 @@ export function Sparkline({
         style={{ width: W, height: H }}
       >
         <span aria-hidden>—</span>
-        <span className="sr-only">No 7-day data yet</span>
+        <span className="sr-only">No {period} data yet</span>
       </span>
     );
   }
   const { direction, changePct } = g.trend;
-  const label = `7-day trend: ${direction === "flat" ? "flat" : `${direction} ${Math.abs(changePct).toFixed(1)}%`}`;
+  const name =
+    label ??
+    `${period} trend: ${direction === "flat" ? "flat" : `${direction} ${Math.abs(changePct).toFixed(1)}%`}`;
 
   return (
     <svg
       role="img"
-      aria-label={label}
+      aria-label={name}
       width={W}
       height={H}
       viewBox={`0 0 ${W} ${H}`}

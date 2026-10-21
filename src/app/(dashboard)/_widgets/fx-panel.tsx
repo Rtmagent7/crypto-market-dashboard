@@ -47,7 +47,7 @@ export async function FxPanel(): Promise<ReactNode> {
           </div>
           {fx.history.length > 1 ? (
             <div className="flex flex-col items-end gap-1">
-              <Sparkline values={fx.history.slice(-LAST_30_DAYS).map((p) => p.v)} />
+              <Sparkline values={fx.history.slice(-LAST_30_DAYS).map((p) => p.v)} period="30-day" />
               <span className="text-meta text-muted">30 days</span>
             </div>
           ) : null}

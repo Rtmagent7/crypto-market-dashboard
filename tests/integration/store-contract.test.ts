@@ -46,6 +46,13 @@ describe.each(stores)("KeyValueStore contract (%s)", (_name, make) => {
     expect(await store.get(key)).toBeNull();
   });
 
+  it("INCR by an amount (weighted quota)", async () => {
+    const key = k("weighted");
+    expect(await store.incr(key, 60, 8)).toBe(8);
+    expect(await store.incr(key, 60, 8)).toBe(16);
+    expect(await store.decr(key, 8)).toBe(8);
+  });
+
   it("values expire after px", async () => {
     const key = k("px");
     await store.set(key, 1, { px: 200 });

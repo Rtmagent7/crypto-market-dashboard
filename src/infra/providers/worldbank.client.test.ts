@@ -28,7 +28,12 @@ describe("createWorldBankClient", () => {
         return undefined; // fall through to the fixture handler
       }),
     );
-    const [, rows] = await createWorldBankClient().indicators("IDN", ids, { from: 2010, to: 2026 }, signal());
+    const [, rows] = await createWorldBankClient().indicators(
+      "IDN",
+      ids,
+      { from: 2010, to: 2026 },
+      signal(),
+    );
     expect(url!.pathname).toBe(`/v2/country/IDN/indicator/${ids.join(";")}`);
     expect(Object.fromEntries(url!.searchParams)).toMatchObject({
       source: "2",

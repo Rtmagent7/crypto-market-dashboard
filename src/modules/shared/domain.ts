@@ -81,3 +81,11 @@ export interface UsdIdr {
   /** One year of daily USD/IDR closes, oldest first. */
   history: PricePoint[];
 }
+
+export interface CoinDetail extends CryptoAsset {
+  volume24hUsd: number | null;
+  athUsd: number | null;
+  circulatingSupply: number | null;
+  high24hUsd: number | null;
+  low24hUsd: number | null;
+}

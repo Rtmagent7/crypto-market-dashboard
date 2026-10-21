@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tidewater — crypto & market dashboard
 
-## Getting Started
+Crypto markets, US stocks and FX rates in near-real-time, at **$0** and **never over an API
+limit**. Provider call volume is set by cache TTL, not by visitor count: every outbound call
+goes through one server-side gate (`callWithBudget`) backed by Redis.
 
-First, run the development server:
+> Status: **Phase 1 — scaffold & app shell.** Data modules arrive in Sprint 2.
+
+## Stack
+
+Next.js 16 (App Router, Cache Components, Turbopack) · TypeScript strict · Tailwind CSS v4 +
+shadcn/ui · TanStack Query · Zustand · Zod · Redis · Vitest · Playwright + axe · Docker ·
+GitHub Actions.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local      # MOCK_PROVIDERS=1 keeps local dev at zero provider calls
+npm ci
+npm run dev                     # http://localhost:3000
+docker compose up redis         # local Redis for integration tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Checks
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint && npm run format:check && npm run typecheck && npm run check:tokens
+npm test                        # Vitest
+npm run build && npm run test:e2e   # Playwright + axe against the production build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Docs
 
-## Learn More
+- `CLAUDE.md` — engineering rules for every Claude Code session
+- `docs/adr/` — architecture decisions
+- `docs/security.md` — security notes (OWASP mapping in Sprint 4)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Crypto data by [CoinGecko](https://www.coingecko.com/). Educational information only, not
+financial advice.

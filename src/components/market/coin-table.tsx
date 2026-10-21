@@ -142,7 +142,8 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
         className={cn(
           rowHeight,
           href ? "cursor-pointer" : "cursor-default",
-          "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+          // `outline-none` zeroes the outline style, so focus-visible must set it back to solid.
+          "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent focus-visible:outline-solid",
         )}
       >
         <td className="px-2 text-muted tabular-nums">{c.rank || "—"}</td>

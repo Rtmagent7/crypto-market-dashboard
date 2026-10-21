@@ -18,7 +18,8 @@ export interface BudgetedCall<T> {
   /** Provider path, for logs only. */
   endpoint: string;
   cacheKey: string;
-  policy: CachePolicy;
+  /** Fixed TTL, or one derived from the response (e.g. Twelve Data's `is_market_open`). */
+  policy: CachePolicy | ((data: T) => CachePolicy);
   fetcher: (signal: AbortSignal) => Promise<T>;
   requestId?: string;
 }
@@ -222,13 +223,14 @@ export const createCallWithBudget = ({
       }
 
       const fetchedAt = now();
+      const policy = typeof call.policy === "function" ? call.policy(result.data) : call.policy;
       const entry: CacheEntry<T> = {
         data: result.data,
         fetchedAt,
-        expiresAt: fetchedAt + call.policy.ttl * 1000,
+        expiresAt: fetchedAt + policy.ttl * 1000,
       };
       await store.set(keys.cache(call.cacheKey), entry, {
-        px: (call.policy.ttl + call.policy.staleFor) * 1000,
+        px: (policy.ttl + policy.staleFor) * 1000,
       });
       await store.del(keys.breakerFails(call.budget));
       return { status: "fresh", ...entry, cacheHit: false };

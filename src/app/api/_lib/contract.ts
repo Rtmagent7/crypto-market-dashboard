@@ -8,6 +8,7 @@ import type {
   FxRates,
   PricePoint,
   ProviderStatus,
+  StockQuote,
 } from "../../../modules/shared/domain";
 
 // Public HTTP contract of /api/*, documented in docs/openapi.yaml (`npm run openapi`).
@@ -91,6 +92,20 @@ export const ProviderStatusSchema = z
 
 export const StatusEnvelopeSchema = envelope("StatusEnvelope", z.array(ProviderStatusSchema));
 
+export const StockQuoteSchema = z
+  .object({
+    symbol: z.string().openapi({ example: "AAPL" }),
+    name: z.string().openapi({ example: "Apple Inc." }),
+    price: z.number(),
+    change: z.number(),
+    changePct: z.number(),
+    isMarketOpen: z.boolean(),
+    asOf: z.string().openapi({ description: "Time of the last trade (ISO 8601)" }),
+  })
+  .openapi("StockQuote");
+
+export const StocksEnvelopeSchema = envelope("StocksEnvelope", z.array(StockQuoteSchema));
+
 const ErrorSchema = z.object({ error: z.string() }).openapi("Error");
 
 export const FxRatesSchema = z
@@ -113,6 +128,8 @@ assertContract<Equals<z.infer<typeof CryptoAssetSchema>, CryptoAsset>>();
 assertContract<Equals<z.infer<typeof MarketEnvelopeSchema>, DataEnvelope<CryptoAsset[]>>>();
 assertContract<Equals<z.infer<typeof FxRatesSchema>, FxRates>>();
 assertContract<Equals<z.infer<typeof PricePointSchema>, PricePoint>>();
+assertContract<Equals<z.infer<typeof StockQuoteSchema>, StockQuote>>();
+assertContract<Equals<z.infer<typeof StocksEnvelopeSchema>, DataEnvelope<StockQuote[]>>>();
 assertContract<Equals<z.infer<typeof ProviderStatusSchema>, ProviderStatus>>();
 assertContract<Equals<z.infer<typeof StatusEnvelopeSchema>, DataEnvelope<ProviderStatus[]>>>();
 assertContract<Equals<z.infer<typeof ChartEnvelopeSchema>, DataEnvelope<PricePoint[]>>>();
@@ -207,5 +224,23 @@ registry.registerPath({
       content: { "application/json": { schema: StatusEnvelopeSchema } },
     },
     429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/stocks",
+  summary: "US watchlist quotes (8 tickers)",
+  description:
+    "Twelve Data, refreshed at :00/:20/:40 while the market is open and at most every 6 h when " +
+    "closed — decided from `is_market_open` in the response, never from the server clock.",
+  tags: ["stocks"],
+  responses: {
+    200: {
+      description: "Fresh or stale quotes.",
+      content: { "application/json": { schema: StocksEnvelopeSchema } },
+    },
+    429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
+    503: unavailable(StocksEnvelopeSchema),
   },
 });

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { formatChange, formatCompactUsd, formatIdr, formatPercent, formatUsd } from "./format";
+import {
+  formatChange,
+  formatCompactUsd,
+  formatIdr,
+  formatIndicator,
+  formatPercent,
+  formatUsd,
+} from "./format";
 
 const MINUS = "−";
 
@@ -50,5 +57,16 @@ describe("formatChange — never color alone (spec §9)", () => {
 describe("formatPercent", () => {
   it("formats a plain share without sign", () => {
     expect(formatPercent(59.638)).toBe("59.6%");
+  });
+});
+
+describe("formatIndicator (macro values)", () => {
+  it("percent: one decimal, true minus for negatives", () => {
+    expect(formatIndicator("percent", 5.10808904438025)).toBe("5.1%");
+    expect(formatIndicator("percent", -0.614730078804115)).toBe("−0.6%");
+  });
+
+  it("usd: whole dollars", () => {
+    expect(formatIndicator("usd", 5059.62596411213)).toBe("$5,060");
   });
 });

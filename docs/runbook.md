@@ -5,11 +5,11 @@ How to operate Tidewater after launch (spec Phase 7). Production:
 
 ## Routine
 
-| When                 | Do                                                                                                                                                                                                                                |
-| :------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Weekly               | Open `/status`: every core provider Operational, quota meters below the 70% tick. Merge green Dependabot PRs (CI + E2E + Lighthouse must pass; read changelogs of major bumps).                                                   |
-| Monthly              | Check each provider's pricing page for free-tier changes (CoinGecko, Twelve Data, Frankfurter, Groq, Upstash). Update `src/infra/outbound/budgets.ts` (caps = 80% of the official limit) and the calibration table in the README. |
-| After any TTL change | Rerun `npm test` — the quota-compliance tests recompute the expected calls per day.                                                                                                                                               |
+| When                 | Do                                                                                                                                                                                                                                            |
+| :------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weekly               | Open `/status`: every core provider Operational, quota meters below the 70% tick. Merge green Dependabot PRs (CI + E2E + Lighthouse must pass; read changelogs of major bumps).                                                               |
+| Monthly              | Check each provider's pricing page for free-tier changes (CoinGecko, Twelve Data, Frankfurter, Groq, World Bank, Upstash). Update `src/infra/outbound/budgets.ts` (caps = 80% of the official limit) and the calibration table in the README. |
+| After any TTL change | Rerun `npm test` — the quota-compliance tests recompute the expected calls per day.                                                                                                                                                           |
 
 ## Alerts and what to do
 

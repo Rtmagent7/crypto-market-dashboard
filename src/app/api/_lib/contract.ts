@@ -7,6 +7,7 @@ import type {
   DataEnvelope,
   FxRates,
   PricePoint,
+  ProviderStatus,
 } from "../../../modules/shared/domain";
 
 // Public HTTP contract of /api/*, documented in docs/openapi.yaml (`npm run openapi`).
@@ -24,6 +25,7 @@ const ProviderId = z
     "exchangerate",
     "groq",
     "workers-ai",
+    "internal",
   ])
   .openapi("ProviderId");
 
@@ -68,6 +70,27 @@ export const PricePointSchema = z
 
 export const ChartEnvelopeSchema = envelope("ChartEnvelope", z.array(PricePointSchema));
 
+export const ProviderStatusSchema = z
+  .object({
+    id: z.string().openapi({ example: "coingecko" }),
+    name: z.string().openapi({ example: "CoinGecko" }),
+    role: z.enum(["core", "backup", "optional"]),
+    serves: z.string().openapi({ example: "Crypto prices" }),
+    state: z.enum(["operational", "degraded", "down", "standby"]),
+    reason: z.string().nullable(),
+    quotaUsed: z.number().int(),
+    quotaCap: z
+      .number()
+      .int()
+      .openapi({ description: "Enforced cap (80% of the provider limit × BUDGET_CAP_RATIO)" }),
+    quotaPeriod: z.enum(["day", "month"]),
+    lastDataAt: z.string().nullable(),
+    fallbackActive: z.string().nullable(),
+  })
+  .openapi("ProviderStatus");
+
+export const StatusEnvelopeSchema = envelope("StatusEnvelope", z.array(ProviderStatusSchema));
+
 const ErrorSchema = z.object({ error: z.string() }).openapi("Error");
 
 export const FxRatesSchema = z
@@ -90,6 +113,8 @@ assertContract<Equals<z.infer<typeof CryptoAssetSchema>, CryptoAsset>>();
 assertContract<Equals<z.infer<typeof MarketEnvelopeSchema>, DataEnvelope<CryptoAsset[]>>>();
 assertContract<Equals<z.infer<typeof FxRatesSchema>, FxRates>>();
 assertContract<Equals<z.infer<typeof PricePointSchema>, PricePoint>>();
+assertContract<Equals<z.infer<typeof ProviderStatusSchema>, ProviderStatus>>();
+assertContract<Equals<z.infer<typeof StatusEnvelopeSchema>, DataEnvelope<ProviderStatus[]>>>();
 assertContract<Equals<z.infer<typeof ChartEnvelopeSchema>, DataEnvelope<PricePoint[]>>>();
 assertContract<Equals<z.infer<typeof FxEnvelopeSchema>, DataEnvelope<FxRates>>>();
 
@@ -165,5 +190,22 @@ registry.registerPath({
     },
     429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
     503: unavailable(ChartEnvelopeSchema),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/status",
+  summary: "Provider health and quota use",
+  description:
+    "Read live from the same Redis counters, circuit breakers and cache entries the quota guard " +
+    "uses. Never cached (`Cache-Control: no-store`); the page polls it every 60 s.",
+  tags: ["status"],
+  responses: {
+    200: {
+      description: "Current provider status.",
+      content: { "application/json": { schema: StatusEnvelopeSchema } },
+    },
+    429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
   },
 });

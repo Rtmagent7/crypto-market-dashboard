@@ -4,10 +4,16 @@ import type { DataEnvelope, MarketBrief } from "@/modules/shared/domain";
 import { toEnvelope } from "@/modules/shared/envelope";
 
 import { getAiRepository, type AiRepository } from "./ai.repository";
-import { buildMarketContext, buildMessages } from "./prompts";
+import { buildChatMessages, buildMarketContext, buildMessages } from "./prompts";
+
+export type AskResult =
+  | { status: "streaming"; deltas: ReadableStream<string> }
+  | { status: "unavailable"; reason: "no-market-data" | "budget-exhausted" | "provider" };
 
 export interface AiService {
   getBrief(): Promise<DataEnvelope<MarketBrief>>;
+  /** Ask AI: answers from cached market data only; the question is untrusted input. */
+  ask(question: string): Promise<AskResult>;
 }
 
 /**
@@ -25,6 +31,27 @@ export const createAiService = ({
   fx: FxService;
   now?: () => number;
 }): AiService => ({
+  ask: async (question) => {
+    const [top, global, usdIdr] = await Promise.all([
+      market.getTopCoins(),
+      market.getGlobal(),
+      fx.getUsdIdr(),
+    ]);
+    if (!top.data) return { status: "unavailable", reason: "no-market-data" };
+    const context = buildMarketContext({
+      coins: top.data,
+      global: global.data,
+      usdIdr: usdIdr.data,
+    });
+    const result = await repository.ask(buildChatMessages(context, question));
+    if (result.status === "unavailable") {
+      return {
+        status: "unavailable",
+        reason: result.reason === "budget-exhausted" ? "budget-exhausted" : "provider",
+      };
+    }
+    return { status: "streaming", deltas: result.data };
+  },
   getBrief: async () => {
     const messages = async (): Promise<ReturnType<typeof buildMessages>> => {
       const [top, global, usdIdr] = await Promise.all([

@@ -19,7 +19,8 @@
     "prepare": "husky",
     "fixtures:capture": "node --env-file-if-exists=.env.local scripts/capture-fixtures.mts",
     "openapi": "tsx scripts/generate-openapi.mts",
-    "openapi:check": "tsx scripts/generate-openapi.mts --check"
+    "openapi:check": "tsx scripts/generate-openapi.mts --check",
+    "fixtures:ai": "tsx --env-file=.env.local scripts/capture-ai-fixture.mts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",

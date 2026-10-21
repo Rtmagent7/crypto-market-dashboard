@@ -8,6 +8,7 @@
         "http://localhost:3200/coins/bitcoin",
         "http://localhost:3200/fx",
         "http://localhost:3200/stocks",
+        "http://localhost:3200/macro",
         "http://localhost:3200/status"
       ],
       "numberOfRuns": 3,

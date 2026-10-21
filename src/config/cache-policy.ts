@@ -48,3 +48,9 @@ export const TWELVEDATA_SCHEDULE = {
   /** Daily series refresh once, 15 minutes after the 16:00 close. */
   dailyAfterClose: "16:15",
 } as const;
+
+/** Visitor rate limits per hashed IP (spec §11). Cached data is cheap; AI routes are stricter. */
+export const RATE_LIMITS = {
+  api: { limit: 120, windowSec: 60 },
+  ai: { limit: 30, windowSec: 60 },
+} as const;

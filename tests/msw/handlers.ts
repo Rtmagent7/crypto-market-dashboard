@@ -15,6 +15,7 @@ import tdQuote from "../fixtures/twelvedata-quote.json";
 import tdDaily from "../fixtures/twelvedata-time-series-1day.json";
 import groqSummary from "../fixtures/groq-summary.json";
 import tdHourly from "../fixtures/twelvedata-time-series-1h.json";
+import wbIndicators from "../fixtures/worldbank-indicators.json";
 
 // Provider mocks served from real captured responses (tests/fixtures). Used by Vitest and,
 // with MOCK_PROVIDERS=1, by the dev/E2E server via instrumentation.ts — zero real quota.
@@ -64,6 +65,10 @@ export const createProviderHandlers = (hits: HitCounter = new Map()): HttpHandle
     http.get(
       "https://open.er-api.com/v6/latest/USD",
       () => (hit("exchangerate:/latest"), HttpResponse.json(erLatest)),
+    ),
+    http.get(
+      "https://api.worldbank.org/v2/country/:country/indicator/:ids",
+      () => (hit("worldbank:/indicator"), HttpResponse.json(wbIndicators)),
     ),
     http.post("https://api.groq.com/openai/v1/chat/completions", async ({ request }) => {
       hit("groq:/chat/completions");

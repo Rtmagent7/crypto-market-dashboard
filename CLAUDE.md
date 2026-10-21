@@ -27,9 +27,13 @@ correctness → quota safety → security → performance → polish.
 ## Next.js 16 notes (this repo)
 
 - `cacheComponents` + `partialPrefetching` are on. Route-segment `revalidate`/`dynamic` do
-  not exist; data lifetimes use `'use cache'` + `cacheLife()` (ADR 0009, **proposed**).
+  not exist; data lifetimes use `'use cache'` + `cacheLife()` (ADR 0009).
 - Read `node_modules/next/dist/docs/` before using an API you are unsure about.
 - `npm run typecheck` runs `next typegen` first (route types for `PageProps`/`LayoutProps`).
+- MSW v3: the option is `onUnhandledFrame` (`onUnhandledRequest` is silently ignored).
+- Tests use `setupProviderMocks()` from `tests/msw/server.ts`; real Redis tests need
+  `TEST_REDIS_URL`/`TEST_REDIS_TOKEN` (`docker compose up -d redis-http`).
+- Recapture fixtures with `npm run fixtures:capture` (calls each endpoint once; ask first).
 
 ## Layer rules (Section 7)
 

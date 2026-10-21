@@ -1,5 +1,16 @@
-import type { CgGlobal, CgMarketItem, CgTrending } from "@/infra/providers/coingecko.schema";
-import type { CryptoAsset, GlobalMarket, TrendingCoin } from "@/modules/shared/domain";
+import type {
+  CgGlobal,
+  CgMarketChart,
+  CgMarketItem,
+  CgTrending,
+} from "@/infra/providers/coingecko.schema";
+import type {
+  CoinDetail,
+  CryptoAsset,
+  GlobalMarket,
+  PricePoint,
+  TrendingCoin,
+} from "@/modules/shared/domain";
 
 /** Provider → domain (spec 6.3). Swapping providers changes only this file, never the UI. */
 export const fromCoinGecko = (i: CgMarketItem): CryptoAsset => ({
@@ -48,3 +59,16 @@ export const fromCoinGeckoTrending = ({ coins }: CgTrending): TrendingCoin[] =>
     priceUsd: item.data.price,
     change24hPct: item.data.price_change_percentage_24h?.usd ?? null,
   }));
+
+/** The same market item, plus the stats grid of the coin detail page (spec 9A). */
+export const fromCoinGeckoDetail = (i: CgMarketItem): CoinDetail => ({
+  ...fromCoinGecko(i),
+  volume24hUsd: i.total_volume,
+  athUsd: i.ath,
+  circulatingSupply: i.circulating_supply,
+  high24hUsd: i.high_24h,
+  low24hUsd: i.low_24h,
+});
+
+export const fromCoinGeckoChart = (c: CgMarketChart): PricePoint[] =>
+  c.prices.map(([ms, v]) => ({ t: new Date(ms).toISOString(), v }));

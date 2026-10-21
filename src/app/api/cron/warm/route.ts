@@ -3,6 +3,7 @@ import { connection, type NextRequest } from "next/server";
 import { getEnv } from "@/infra/env";
 import { getAiService } from "@/modules/ai/ai.service";
 import { getFxService } from "@/modules/fx/fx.service";
+import { getMacroService } from "@/modules/macro/macro.service";
 import { getMarketService } from "@/modules/market/market.service";
 import type { DataEnvelope, DataStatus } from "@/modules/shared/domain";
 import { getStocksService } from "@/modules/stocks/stocks.service";
@@ -33,6 +34,8 @@ const WARMERS: Record<WarmScope, () => Record<string, Promise<DataStatus>>> = {
     return { rates: statusOf(f.getRates()), history: statusOf(f.getHistories()) };
   },
   ai: () => ({ brief: statusOf(getAiService().getBrief()) }),
+  // Daily check of a 7-day TTL: a cache hit costs nothing, so the World Bank is called weekly.
+  macro: () => ({ indicators: statusOf(getMacroService().getIndicators()) }),
 };
 
 /** GET|POST /api/cron/warm?scope=<WARM_SCOPES> — Authorization: Bearer CRON_SECRET. */

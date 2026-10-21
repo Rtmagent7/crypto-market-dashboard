@@ -11,13 +11,14 @@ on:
     - cron: "20 21 * * 1-5" # stocks daily bars after the close (16:20 EST / 17:20 EDT)
     - cron: "0 */6 * * *" # fx
     - cron: "0 */3 * * *" # ai brief
+    - cron: "40 0 * * *" # macro (7-day TTL; a daily check costs nothing until it expires)
   workflow_dispatch:
     inputs:
       scope:
         description: Scope to warm
         required: true
         type: choice
-        options: [market, stocks, stocks-intraday, stocks-daily, fx, ai]
+        options: [market, stocks, stocks-intraday, stocks-daily, fx, ai, macro]
 
 permissions:
   contents: read
@@ -45,6 +46,7 @@ jobs:
             "20 21 * * 1-5")  scope=stocks-daily ;;
             "0 */6 * * *")    scope=fx ;;
             "0 */3 * * *")    scope=ai ;;
+            "40 0 * * *")     scope=macro ;;
             *)                scope="$INPUT" ;;
           esac
           echo "scope=$scope" >> "$GITHUB_OUTPUT"

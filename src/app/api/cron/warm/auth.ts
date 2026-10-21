@@ -13,6 +13,7 @@ export const WARM_SCOPES = [
   "stocks-daily",
   "fx",
   "ai",
+  "macro",
 ] as const;
 export type WarmScope = (typeof WARM_SCOPES)[number];
 

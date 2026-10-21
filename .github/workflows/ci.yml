@@ -45,6 +45,17 @@ jobs:
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+      # Upstash-compatible REST proxy: integration tests speak the production protocol.
+      redis-http:
+        image: hiett/serverless-redis-http:latest
+        ports: ["8079:80"]
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: ci-token
+          SRH_CONNECTION_STRING: redis://redis:6379
+    env:
+      TEST_REDIS_URL: http://localhost:8079
+      TEST_REDIS_TOKEN: ci-token
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

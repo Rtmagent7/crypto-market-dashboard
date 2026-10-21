@@ -9,6 +9,7 @@ const PAGES = [
   { name: "coin", path: "/coins/bitcoin" },
   { name: "fx", path: "/fx" },
   { name: "stocks", path: "/stocks" },
+  { name: "macro", path: "/macro" },
   { name: "status", path: "/status" },
 ] as const;
 const WIDTHS = [390, 768, 1440] as const;

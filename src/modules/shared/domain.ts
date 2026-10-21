@@ -71,3 +71,13 @@ export interface TrendingCoin {
   priceUsd: number;
   change24hPct: number | null;
 }
+
+export interface UsdIdr {
+  rate: number;
+  /** Business day the rate applies to (YYYY-MM-DD). */
+  date: string;
+  /** Change against the previous business day; null when history is unavailable. */
+  change1dPct: number | null;
+  /** One year of daily USD/IDR closes, oldest first. */
+  history: PricePoint[];
+}

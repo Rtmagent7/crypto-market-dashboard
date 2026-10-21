@@ -81,7 +81,7 @@ export function Watchlist({
                     <ChangeCell pct={q.changePct} />
                   </td>
                   <td className="px-2 text-right @max-[30rem]:hidden">
-                    <Sparkline values={(hourly[q.symbol] ?? []).map((p) => p.v)} />
+                    <Sparkline values={(hourly[q.symbol] ?? []).map((p) => p.v)} period="24-hour" />
                   </td>
                 </tr>
               ))}

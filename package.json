@@ -17,7 +17,9 @@
     "check:tokens": "node scripts/check-raw-hex.mjs",
     "analyze": "ANALYZE=true next build",
     "prepare": "husky",
-    "fixtures:capture": "node --env-file-if-exists=.env.local scripts/capture-fixtures.mts"
+    "fixtures:capture": "node --env-file-if-exists=.env.local scripts/capture-fixtures.mts",
+    "openapi": "tsx scripts/generate-openapi.mts",
+    "openapi:check": "tsx scripts/generate-openapi.mts --check"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
@@ -35,6 +37,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@axe-core/playwright": "^4.14.0",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
@@ -59,8 +62,10 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "^4.22.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": ">=24"

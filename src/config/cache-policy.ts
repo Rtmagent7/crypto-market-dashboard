@@ -29,3 +29,9 @@ export const CACHE_POLICY = {
 } as const satisfies Record<string, CachePolicy>;
 
 export type CachePolicyKey = keyof typeof CACHE_POLICY;
+
+/**
+ * While data is stale or unavailable, clients re-ask the internal API this often. It costs no
+ * provider quota (the gate serves cache or skips the call), and picks up recovery quickly.
+ */
+export const DEGRADED_RETRY_SECONDS = 60;

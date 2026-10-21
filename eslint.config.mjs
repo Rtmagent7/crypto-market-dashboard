@@ -80,6 +80,25 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Mappers translate provider shapes into the domain, so they may read provider *schemas*
+    // (types + Zod), but never clients, HTTP or the outbound gate. Tests may do the same.
+    files: ["src/modules/*/*.mapper.ts", "src/modules/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            FRAMEWORK_FREE,
+            {
+              group: ["@/infra/outbound/*", "@/infra/providers/*.client", "@/infra/providers/http"],
+              message: "Only repositories call providers, and only via callWithBudget.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/modules/*/*.repository.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [FRAMEWORK_FREE] }] },
   },

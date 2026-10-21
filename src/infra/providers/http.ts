@@ -23,19 +23,24 @@ const parseRetryAfter = (value: string | null): number | null => {
 export interface GetJsonOptions {
   signal: AbortSignal;
   headers?: Record<string, string>;
+  /** For providers that report errors inside a 200 body (Twelve Data): return the error to throw. */
+  rejectBody?: (body: unknown) => ProviderHttpError | null;
 }
 
 /** GET + Zod validation. Non-2xx → ProviderHttpError; schema mismatch → ContractError. */
 export const getJson = async <S extends z.ZodType>(
   url: string,
   schema: S,
-  { signal, headers }: GetJsonOptions,
+  { signal, headers, rejectBody }: GetJsonOptions,
 ): Promise<z.infer<S>> => {
   const res = await fetch(url, { signal, headers: { accept: "application/json", ...headers } });
   if (!res.ok) {
     throw new ProviderHttpError(res.status, parseRetryAfter(res.headers.get("retry-after")));
   }
-  const parsed = schema.safeParse(await res.json());
+  const body: unknown = await res.json();
+  const bodyError = rejectBody?.(body);
+  if (bodyError) throw bodyError;
+  const parsed = schema.safeParse(body);
   if (!parsed.success) throw new ContractError(parsed.error.issues);
   return parsed.data;
 };

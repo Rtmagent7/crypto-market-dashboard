@@ -112,3 +112,5 @@ export interface ProviderStatus {
   /** Name of the backup currently serving instead of this provider, if any. */
   fallbackActive: string | null;
 }
+
+export type StockSeriesRange = "1d" | "1y";

@@ -5,6 +5,7 @@ const PAGES = [
   { path: "/", heading: "Market overview" },
   { path: "/stocks", heading: "Stocks" },
   { path: "/fx", heading: "FX" },
+  { path: "/macro", heading: "Macro" },
   { path: "/status", heading: "Status" },
 ] as const;
 

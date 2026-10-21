@@ -1,4 +1,6 @@
-import type { DataEnvelope, FxRates, UsdIdr } from "@/modules/shared/domain";
+import { FX_HISTORY_CURRENCIES, type HistoryCurrency } from "@/config/currencies";
+import type { DataEnvelope, FxRates, PricePoint, UsdIdr } from "@/modules/shared/domain";
+import { toEnvelope } from "@/modules/shared/envelope";
 import { withFallback } from "@/modules/shared/fallback";
 
 import { fromExchangeRate, fromFrankfurter, fromFrankfurterRange } from "./fx.mapper";
@@ -7,6 +9,7 @@ import { getFxRepository, type FxRepository } from "./fx.repository";
 export interface FxService {
   getRates(): Promise<DataEnvelope<FxRates>>;
   getUsdIdr(): Promise<DataEnvelope<UsdIdr>>;
+  getHistories(): Promise<DataEnvelope<Record<HistoryCurrency, PricePoint[]>>>;
 }
 
 const pctChange = (from: number, to: number): number =>
@@ -28,6 +31,15 @@ export const createFxService = ({
 
   return {
     getRates,
+    getHistories: async () =>
+      toEnvelope(await repository.frankfurterRange(), {
+        source: "frankfurter",
+        map: (range) =>
+          Object.fromEntries(
+            FX_HISTORY_CURRENCIES.map((c) => [c, fromFrankfurterRange(range, c)]),
+          ) as Record<HistoryCurrency, PricePoint[]>,
+        now: now(),
+      }),
     getUsdIdr: async () => {
       const [rates, range] = await Promise.all([getRates(), repository.frankfurterRange()]);
       const history = range.status === "unavailable" ? [] : fromFrankfurterRange(range.data, "IDR");

@@ -14,6 +14,6 @@ export default defineConfig({
     command: `npm run start -- -p ${PORT}`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
-    env: { MOCK_PROVIDERS: "1" },
+    env: { MOCK_PROVIDERS: "1", CRON_SECRET: "e2e-cron-secret-0123456789abcdef0123456789" },
   },
 });

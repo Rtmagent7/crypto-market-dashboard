@@ -1,7 +1,13 @@
 import { extendZodWithOpenApi, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 
-import type { CryptoAsset, DataEnvelope, FxRates } from "../../../modules/shared/domain";
+import { CHART_RANGES, COIN_WHITELIST } from "../../../config/coins";
+import type {
+  CryptoAsset,
+  DataEnvelope,
+  FxRates,
+  PricePoint,
+} from "../../../modules/shared/domain";
 
 // Public HTTP contract of /api/*, documented in docs/openapi.yaml (`npm run openapi`).
 // Relative imports only: scripts/generate-openapi.mts runs this file outside Next.js.
@@ -53,6 +59,17 @@ export const CryptoAssetSchema = z
 
 export const MarketEnvelopeSchema = envelope("MarketEnvelope", z.array(CryptoAssetSchema));
 
+export const PricePointSchema = z
+  .object({
+    t: z.string().openapi({ description: "ISO 8601 time, or YYYY-MM-DD for daily series" }),
+    v: z.number(),
+  })
+  .openapi("PricePoint");
+
+export const ChartEnvelopeSchema = envelope("ChartEnvelope", z.array(PricePointSchema));
+
+const ErrorSchema = z.object({ error: z.string() }).openapi("Error");
+
 export const FxRatesSchema = z
   .object({
     base: z.string().length(3).openapi({ example: "USD" }),
@@ -72,6 +89,8 @@ const assertContract = <T extends true>(): T => true as T;
 assertContract<Equals<z.infer<typeof CryptoAssetSchema>, CryptoAsset>>();
 assertContract<Equals<z.infer<typeof MarketEnvelopeSchema>, DataEnvelope<CryptoAsset[]>>>();
 assertContract<Equals<z.infer<typeof FxRatesSchema>, FxRates>>();
+assertContract<Equals<z.infer<typeof PricePointSchema>, PricePoint>>();
+assertContract<Equals<z.infer<typeof ChartEnvelopeSchema>, DataEnvelope<PricePoint[]>>>();
 assertContract<Equals<z.infer<typeof FxEnvelopeSchema>, DataEnvelope<FxRates>>>();
 
 export const registry = new OpenAPIRegistry();
@@ -115,5 +134,36 @@ registry.registerPath({
     },
     429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
     503: unavailable(FxEnvelopeSchema),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/coins/{id}/chart",
+  summary: "Price history for a whitelisted coin",
+  description:
+    "1d and 30d share the hourly 30-day series (TTL 6 h); 1y is daily (TTL 24 h); 7d comes from " +
+    "the top-50 sparkline at no extra provider cost. Parameters are validated against the " +
+    "whitelist before any cache or provider access.",
+  tags: ["market"],
+  request: {
+    params: z.object({ id: z.enum(COIN_WHITELIST).openapi({ example: "bitcoin" }) }),
+    query: z.object({ range: z.enum(CHART_RANGES).optional().openapi({ example: "30d" }) }),
+  },
+  responses: {
+    200: {
+      description: "Fresh or stale series.",
+      content: { "application/json": { schema: ChartEnvelopeSchema } },
+    },
+    400: {
+      description: "Malformed id or unknown range.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    404: {
+      description: "Coin is not on the whitelist.",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+    429: { description: "Rate limited (per hashed IP). Retry after `Retry-After` seconds." },
+    503: unavailable(ChartEnvelopeSchema),
   },
 });

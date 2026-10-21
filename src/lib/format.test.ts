@@ -64,6 +64,8 @@ describe("formatIndicator (macro values)", () => {
   it("percent: one decimal, true minus for negatives", () => {
     expect(formatIndicator("percent", 5.10808904438025)).toBe("5.1%");
     expect(formatIndicator("percent", -0.614730078804115)).toBe("−0.6%");
+    expect(formatIndicator("percent", -0.0866434374916221)).toBe("−0.1%");
+    expect(formatIndicator("percent", -0.04)).toBe("0.0%");
   });
 
   it("usd: whole dollars", () => {

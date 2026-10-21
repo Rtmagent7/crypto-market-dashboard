@@ -102,3 +102,21 @@ describe("fx service — USD/IDR", () => {
     expect(env.data?.history).toEqual([]);
   });
 });
+
+describe("fx service — 1-year histories", () => {
+  it("returns one chronological series per history currency", async () => {
+    const env = await createFxService({ repository: repo(), now: () => NOW }).getHistories();
+    expect(env.status).toBe("fresh");
+    expect(env.source).toBe("frankfurter");
+    expect(Object.keys(env.data ?? {})).toEqual(["IDR", "EUR", "JPY", "SGD", "GBP"]);
+    expect(env.data?.IDR.length).toBeGreaterThan(240);
+  });
+
+  it("is unavailable when the range has never been fetched", async () => {
+    const env = await createFxService({
+      repository: repo({ frankfurterRange: vi.fn(async () => unavailable) }),
+      now: () => NOW,
+    }).getHistories();
+    expect(env).toMatchObject({ status: "unavailable", data: null });
+  });
+});

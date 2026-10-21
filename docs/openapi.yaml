@@ -96,6 +96,59 @@ components:
         - groq
         - workers-ai
       description: Provider that actually served the data
+    FxEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/FxRates"
+        status:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - unavailable
+        source:
+          $ref: "#/components/schemas/ProviderId"
+        fetchedAt:
+          type: string
+          format: date-time
+          description: When the data was fetched (ISO 8601)
+        nextRefreshAt:
+          type: string
+          format: date-time
+          description: Do not poll again before this time (ISO 8601)
+      required:
+        - data
+        - status
+        - source
+        - fetchedAt
+        - nextRefreshAt
+    FxRates:
+      type:
+        - object
+        - "null"
+      properties:
+        base:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        date:
+          type: string
+          description: Business day of the rates (YYYY-MM-DD)
+          example: 2026-10-21
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+          example:
+            IDR: 18043
+            EUR: 0.86155
+      required:
+        - base
+        - date
+        - rates
+      description: null only when status is `unavailable`
   parameters: {}
 paths:
   /api/market:
@@ -116,8 +169,8 @@ paths:
         "429":
           description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
         "503":
-          description: No cached data and the provider cannot be called (budget, breaker
-            or outage).
+          description: No cached data and no provider can be called (budget, breaker or
+            outage).
           headers:
             Retry-After:
               schema:
@@ -127,4 +180,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MarketEnvelope"
+  /api/fx:
+    get:
+      summary: Latest USD exchange rates
+      description: Frankfurter (ECB reference rates, TTL 6 h); ExchangeRate-API serves
+        as the backup and is named in `source` when it was used.
+      tags:
+        - fx
+      responses:
+        "200":
+          description: Fresh or stale rates.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxEnvelope"
+        "429":
+          description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
+        "503":
+          description: No cached data and no provider can be called (budget, breaker or
+            outage).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxEnvelope"
 webhooks: {}

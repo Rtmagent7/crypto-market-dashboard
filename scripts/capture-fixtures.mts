@@ -4,6 +4,7 @@
  * tests/fixtures/_meta/ so quota reset behavior can be verified (Open Decision #4).
  *
  * Run: npm run fixtures:capture  (reads .env.local; never runs in CI or tests)
+ *      npm run fixtures:capture -- worldbank  (only targets whose name starts with an argument)
  *
  * Without a key, endpoints that have an official keyless/demo variant use it, and the
  * fixture is marked `keyless`. Endpoints that need a key and have none are skipped.
@@ -109,6 +110,22 @@ const exchangerate = (): Target[] => {
       ];
 };
 
+// Indonesia macro indicators for /macro: one multi-indicator request (source=2 = WDI).
+const WORLDBANK_INDICATORS = [
+  "NY.GDP.MKTP.KD.ZG",
+  "FP.CPI.TOTL.ZG",
+  "SL.UEM.TOTL.ZS",
+  "NY.GDP.PCAP.CD",
+  "BN.CAB.XOKA.GD.ZS",
+];
+
+const worldbank = (): Target[] => [
+  {
+    name: "worldbank-indicators",
+    url: `https://api.worldbank.org/v2/country/IDN/indicator/${WORLDBANK_INDICATORS.join(";")}?source=2&format=json&date=2010:2026&per_page=500`,
+  },
+];
+
 const keyed = (): Target[] => {
   const targets: Target[] = [];
   if (env.CMC_API_KEY) {
@@ -201,13 +218,15 @@ const capture = async (target: Target): Promise<string> => {
 
 const main = async (): Promise<void> => {
   await mkdir(join(OUT, "_meta"), { recursive: true });
+  const only = process.argv.slice(2);
   const targets = [
     ...coingecko(),
     ...twelvedata(),
     ...frankfurter(),
     ...exchangerate(),
+    ...worldbank(),
     ...keyed(),
-  ];
+  ].filter((t) => only.length === 0 || only.some((prefix) => t.name.startsWith(prefix)));
   // Sequential on purpose: Twelve Data allows 8 credits/min and the demo key far fewer.
   for (const target of targets) {
     try {

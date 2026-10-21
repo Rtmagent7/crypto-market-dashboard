@@ -23,6 +23,11 @@ export interface BudgetedCall<T> {
   fetcher: (signal: AbortSignal) => Promise<T>;
   /** Quota units this call spends (Twelve Data: 1 credit per symbol). Default 1. */
   cost?: number;
+  /**
+   * false for answers that are unique per request (Ask AI): no cache read/write and no lock,
+   * but the same quota, retries, breaker and logging. Default true.
+   */
+  cache?: boolean;
   requestId?: string;
 }
 
@@ -205,7 +210,23 @@ export const createCallWithBudget = ({
     }
   };
 
+  const uncached = async <T>(call: BudgetedCall<T>): Promise<BudgetResult<T>> => {
+    if (await store.get(keys.breakerOpen(call.budget)))
+      return { status: "unavailable", reason: "circuit-open" };
+    if (await store.get(keys.cooldown(call.budget)))
+      return { status: "unavailable", reason: "cooldown" };
+    const result = await attempt(call);
+    if (!result.ok) {
+      if (result.error !== null) await recordFailure(call.budget);
+      return { status: "unavailable", reason: result.reason };
+    }
+    await store.del(keys.breakerFails(call.budget));
+    const t = now();
+    return { status: "fresh", data: result.data, fetchedAt: t, expiresAt: t, cacheHit: false };
+  };
+
   return async <T>(call: BudgetedCall<T>): Promise<BudgetResult<T>> => {
+    if (call.cache === false) return uncached(call);
     const cached = await store.get<CacheEntry<T>>(keys.cache(call.cacheKey));
     if (cached && now() < cached.expiresAt) {
       return { status: "fresh", ...cached, cacheHit: true };

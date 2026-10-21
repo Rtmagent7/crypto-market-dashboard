@@ -35,3 +35,16 @@ export type CachePolicyKey = keyof typeof CACHE_POLICY;
  * provider quota (the gate serves cache or skips the call), and picks up recovery quickly.
  */
 export const DEGRADED_RETRY_SECONDS = 60;
+
+/**
+ * Twelve Data credit schedule (spec §4): one 8-ticker batch spends a whole minute's 8 credits,
+ * so each batch type owns different minutes. Times are in America/New_York.
+ */
+export const TWELVEDATA_SCHEDULE = {
+  /** Quotes refresh at :00, :20 and :40 while the market is open. */
+  quoteMinutes: [0, 20, 40],
+  /** Hourly series refresh at :05. */
+  intradayMinutes: [5],
+  /** Daily series refresh once, 15 minutes after the 16:00 close. */
+  dailyAfterClose: "16:15",
+} as const;

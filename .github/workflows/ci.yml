@@ -111,6 +111,35 @@ jobs:
             test-results/
           if-no-files-found: ignore
 
+  lighthouse:
+    # Performance ≥ 90 / Accessibility ≥ 95 / CLS < 0.1 on the production build (mock providers),
+    # on a dedicated runner (spec §12). Median of 3 runs per page.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx lhci autorun
+      - name: Scores
+        if: always()
+        run: |
+          for f in .lighthouseci/lhr-*.json; do
+            node -e 'const r=require(process.argv[1]); const c=r.categories, a=r.audits;
+              console.log(r.finalDisplayedUrl.replace(/^https?:\/\/[^/]+/, ""), "perf", Math.round(c.performance.score*100),
+                "a11y", Math.round(c.accessibility.score*100), "LCP", a["largest-contentful-paint"].displayValue,
+                "TBT", a["total-blocking-time"].displayValue, "CLS", a["cumulative-layout-shift"].displayValue)' "$f"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: .lighthouseci/
+          if-no-files-found: ignore
+
   audit:
     runs-on: ubuntu-latest
     steps:

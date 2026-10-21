@@ -52,3 +52,6 @@ next-env.d.ts
 /.agents/
 /.claude/
 skills-lock.json
+
+# lighthouse ci reports
+/.lighthouseci/

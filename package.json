@@ -43,6 +43,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
+    "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "^16.4.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",

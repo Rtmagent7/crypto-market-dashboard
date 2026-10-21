@@ -1,0 +1,24 @@
+# Local Redis for integration tests. Optional full-stack run: `docker compose --profile app up`.
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["app"]
+    build: .
+    env_file: .env.local
+    environment:
+      MOCK_PROVIDERS: "1"
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy

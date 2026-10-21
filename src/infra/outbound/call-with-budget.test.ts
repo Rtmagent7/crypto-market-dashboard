@@ -5,7 +5,12 @@ import type { Logger } from "@/infra/logger";
 import { createMemoryStore, type KeyValueStore } from "@/infra/store";
 
 import { BUDGETS } from "./budgets";
-import { createCallWithBudget, type BudgetedCall } from "./call-with-budget";
+import {
+  createCallWithBudget,
+  type BudgetedCall,
+  type CallWithBudget,
+  type CallWithBudgetDeps,
+} from "./call-with-budget";
 import { ContractError, ProviderHttpError, ProviderTimeoutError } from "./errors";
 
 const T0 = Date.parse("2026-10-21T10:00:00Z");
@@ -17,7 +22,7 @@ let store: KeyValueStore;
 let logs: { level: string; event: string; fields: Record<string, unknown> }[];
 let logger: Logger;
 
-const setup = (overrides: Partial<Parameters<typeof createCallWithBudget>[0]> = {}) =>
+const setup = (overrides: Partial<CallWithBudgetDeps> = {}): CallWithBudget =>
   createCallWithBudget({
     store,
     logger,
@@ -27,7 +32,10 @@ const setup = (overrides: Partial<Parameters<typeof createCallWithBudget>[0]> = 
     ...overrides,
   });
 
-const call = <T>(fetcher: BudgetedCall<T>["fetcher"], extra: Partial<BudgetedCall<T>> = {}) => ({
+const call = <T>(
+  fetcher: BudgetedCall<T>["fetcher"],
+  extra: Partial<BudgetedCall<T>> = {},
+): BudgetedCall<T> => ({
   budget: "coingecko" as const,
   endpoint: "/coins/markets",
   cacheKey: "market:top50",
@@ -46,7 +54,7 @@ const prime = async (data: unknown, ageSeconds: number): Promise<void> => {
   await store.del(QUOTA_KEY);
 };
 
-const outbound = () => logs.filter((l) => l.event === "outbound_call");
+const outbound = (): typeof logs => logs.filter((l) => l.event === "outbound_call");
 
 beforeEach(() => {
   clock = T0;

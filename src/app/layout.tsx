@@ -35,8 +35,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f1a1e" },
-    { media: "(prefers-color-scheme: light)", color: "#f4f6f5" },
+    // Browser chrome color can't read CSS variables; mirrors --bg in globals.css.
+    { media: "(prefers-color-scheme: dark)", color: "#0f1a1e" }, // tokens-allow
+    { media: "(prefers-color-scheme: light)", color: "#f4f6f5" }, // tokens-allow
   ],
 };
 

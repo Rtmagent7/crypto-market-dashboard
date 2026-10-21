@@ -32,7 +32,7 @@ export function QuotaMeter({
         aria-valuemin={0}
         aria-valuemax={cap}
         aria-valuenow={used}
-        aria-valuetext={`${pct}% of ${when}'s cap (${count.format(used)} of ${count.format(cap)} calls)`}
+        aria-valuetext={`${pct}% of ${when}'s cap (${count.format(used)} of ${count.format(cap)} credits)`}
         className="relative h-2 w-full overflow-hidden rounded-full bg-line"
       >
         <div

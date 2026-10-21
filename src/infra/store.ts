@@ -6,9 +6,9 @@ export interface KeyValueStore {
   get<T>(key: string): Promise<T | null>;
   /** SET with expiry; `nx` makes it a lock (only set when absent). Returns false if not set. */
   set(key: string, value: unknown, opts: { px: number; nx?: boolean }): Promise<boolean>;
-  /** INCR, and start the expiry only when the key is new (EXPIRE … NX). */
-  incr(key: string, ttlSeconds: number): Promise<number>;
-  decr(key: string): Promise<number>;
+  /** INCRBY (default 1), and start the expiry only when the key is new (EXPIRE … NX). */
+  incr(key: string, ttlSeconds: number, by?: number): Promise<number>;
+  decr(key: string, by?: number): Promise<number>;
   del(key: string): Promise<void>;
 }
 
@@ -39,15 +39,15 @@ export const createMemoryStore = (now: () => number = Date.now): KeyValueStore =
       entries.set(key, { value: structuredClone(value), expiresAt: now() + px });
       return true;
     },
-    async incr(key, ttlSeconds) {
+    async incr(key, ttlSeconds, by = 1) {
       const entry = live(key);
-      const next = (typeof entry?.value === "number" ? entry.value : 0) + 1;
+      const next = (typeof entry?.value === "number" ? entry.value : 0) + by;
       entries.set(key, { value: next, expiresAt: entry?.expiresAt ?? now() + ttlSeconds * 1000 });
       return next;
     },
-    async decr(key) {
+    async decr(key, by = 1) {
       const entry = live(key);
-      const next = (typeof entry?.value === "number" ? entry.value : 0) - 1;
+      const next = (typeof entry?.value === "number" ? entry.value : 0) - by;
       entries.set(key, { value: next, expiresAt: entry?.expiresAt ?? Number.POSITIVE_INFINITY });
       return next;
     },

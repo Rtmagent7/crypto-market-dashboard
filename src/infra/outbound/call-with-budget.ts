@@ -21,6 +21,8 @@ export interface BudgetedCall<T> {
   /** Fixed TTL, or one derived from the response (e.g. Twelve Data's `is_market_open`). */
   policy: CachePolicy | ((data: T) => CachePolicy);
   fetcher: (signal: AbortSignal) => Promise<T>;
+  /** Quota units this call spends (Twelve Data: 1 credit per symbol). Default 1. */
+  cost?: number;
   requestId?: string;
 }
 
@@ -93,6 +95,7 @@ export const createCallWithBudget = ({
    */
   const reserve = async (
     budget: BudgetKey,
+    cost: number,
   ): Promise<{ ok: true; used: number } | { ok: false; reason: SkipReason }> => {
     const { period, resetTz } = BUDGETS[budget];
     const { cap, perMinute } = capOf(budget);
@@ -100,14 +103,20 @@ export const createCallWithBudget = ({
     const periodCounter = keys.quota(budget, periodKey(period, resetTz, t));
     const minuteCounter = keys.minute(budget, minuteKey(t));
 
-    const used = await store.incr(periodCounter, periodTtlSeconds(period));
+    const used = await store.incr(periodCounter, periodTtlSeconds(period), cost);
     if (used > cap) {
-      await store.decr(periodCounter);
+      await store.decr(periodCounter, cost);
       return { ok: false, reason: "budget-exhausted" };
     }
-    // INCR is atomic, so exactly one request observes the crossing value: one signal per period.
+    const usedThisMinute = await store.incr(minuteCounter, 120, cost);
+    if (usedThisMinute > perMinute) {
+      await Promise.all([store.decr(minuteCounter, cost), store.decr(periodCounter, cost)]);
+      return { ok: false, reason: "minute-cap" };
+    }
+    // INCRBY is atomic, so exactly one request's step crosses each threshold: one signal per period.
     for (const pct of ALERT_THRESHOLDS_PCT) {
-      if (used === Math.ceil((cap * pct) / 100)) {
+      const threshold = Math.ceil((cap * pct) / 100);
+      if (used - cost < threshold && used >= threshold) {
         logger.log("warn", "quota_threshold", {
           provider: budget,
           threshold: pct,
@@ -116,11 +125,6 @@ export const createCallWithBudget = ({
           period: periodKey(period, resetTz, t),
         });
       }
-    }
-    const usedThisMinute = await store.incr(minuteCounter, 120);
-    if (usedThisMinute > perMinute) {
-      await Promise.all([store.decr(minuteCounter), store.decr(periodCounter)]);
-      return { ok: false, reason: "minute-cap" };
     }
     return { ok: true, used };
   };
@@ -155,7 +159,7 @@ export const createCallWithBudget = ({
   /** Calls the provider with the retry policy of Section 10.3, counting every attempt. */
   const attempt = async <T>(call: BudgetedCall<T>): Promise<Attempt<T>> => {
     for (let i = 0; ; i++) {
-      const reservation = await reserve(call.budget);
+      const reservation = await reserve(call.budget, call.cost ?? 1);
       if (!reservation.ok) {
         return { ok: false, reason: reservation.reason, error: null };
       }

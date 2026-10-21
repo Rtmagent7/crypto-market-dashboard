@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-21T16:00:55.664Z",
+  "url": "https://api.groq.com/openai/v1/models",
+  "status": 200,
+  "keyless": null,
+  "headers": {
+    "cache-control": "private, max-age=0, no-store, no-cache, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "date": "Wed, 21 Oct 2026 16:00:55 GMT"
+  }
+}

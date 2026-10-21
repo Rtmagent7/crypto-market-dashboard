@@ -1,12 +1,12 @@
 {
-  "capturedAt": "2026-10-21T14:14:13.552Z",
+  "capturedAt": "2026-10-21T15:57:27.832Z",
   "url": "https://api.coingecko.com/api/v3/search/trending",
   "status": 200,
-  "keyless": "public API (no key), same schema as Demo",
+  "keyless": null,
   "headers": {
-    "age": "59",
+    "age": "251",
     "cache-control": "max-age=30, public, must-revalidate, s-maxage=600",
     "cf-cache-status": "HIT",
-    "date": "Wed, 21 Oct 2026 14:14:13 GMT"
+    "date": "Wed, 21 Oct 2026 15:57:27 GMT"
   }
 }

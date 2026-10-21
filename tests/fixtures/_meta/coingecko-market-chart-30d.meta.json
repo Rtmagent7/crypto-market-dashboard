@@ -1,11 +1,12 @@
 {
-  "capturedAt": "2026-10-21T14:14:15.322Z",
+  "capturedAt": "2026-10-21T15:57:29.368Z",
   "url": "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30",
   "status": 200,
-  "keyless": "public API (no key), same schema as Demo",
+  "keyless": null,
   "headers": {
+    "age": "25",
     "cache-control": "max-age=30, public, must-revalidate, s-maxage=30",
     "cf-cache-status": "HIT",
-    "date": "Wed, 21 Oct 2026 14:14:15 GMT"
+    "date": "Wed, 21 Oct 2026 15:57:29 GMT"
   }
 }

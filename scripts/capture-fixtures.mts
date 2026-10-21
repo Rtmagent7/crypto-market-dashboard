@@ -15,6 +15,11 @@ import { join } from "node:path";
 const OUT = "tests/fixtures";
 const env = process.env;
 const TICKERS = "AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA,SPY";
+// Groq candidates (Open Decision #2): different models so summary and chat use separate quotas.
+const GROQ_SUMMARY_MODEL = "openai/gpt-oss-120b";
+const GROQ_CHAT_MODEL = "openai/gpt-oss-20b";
+// An 8-symbol Twelve Data batch spends the whole 8-credits/minute allowance.
+const TWELVEDATA_GAP_MS = 62_000;
 
 interface Target {
   name: string;
@@ -120,11 +125,32 @@ const keyed = (): Target[] => {
     });
   }
   if (env.GROQ_API_KEY) {
+    const auth = { Authorization: `Bearer ${env.GROQ_API_KEY}` };
     targets.push({
       name: "groq-models",
       url: "https://api.groq.com/openai/v1/models",
-      headers: { Authorization: `Bearer ${env.GROQ_API_KEY}` },
+      headers: auth,
     });
+    // One 1-token completion per candidate model: the response headers carry the account's
+    // real per-model limits (x-ratelimit-limit-requests / -tokens), Open Decision #2.
+    for (const [slug, model] of [
+      ["summary-model", GROQ_SUMMARY_MODEL],
+      ["chat-model", GROQ_CHAT_MODEL],
+    ] as const) {
+      targets.push({
+        name: `groq-chat-${slug}`,
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        headers: { ...auth, "content-type": "application/json" },
+        init: {
+          method: "POST",
+          body: JSON.stringify({
+            model,
+            max_tokens: 1,
+            messages: [{ role: "user", content: "Reply with OK." }],
+          }),
+        },
+      });
+    }
   }
   if (env.CF_ACCOUNT_ID && env.CF_AI_TOKEN) {
     targets.push({
@@ -148,10 +174,12 @@ const redact = (text: string): string =>
   SECRET_VALUES.reduce((acc, secret) => acc.split(secret).join("<redacted>"), text);
 
 const capture = async (target: Target): Promise<string> => {
-  const res = await fetch(target.url, { headers: target.headers, ...target.init });
+  const res = await fetch(target.url, { ...target.init, headers: target.headers });
   const body: unknown = await res.json();
   const headers = Object.fromEntries(
-    [...res.headers.entries()].filter(([k]) => /rate|limit|credit|retry|date|cache|age/i.test(k)),
+    [...res.headers.entries()].filter(([k]) =>
+      /rate|limit|credit|retry|date|cache|age|quota|remaining|reset/i.test(k),
+    ),
   );
   await writeFile(join(OUT, `${target.name}.json`), `${JSON.stringify(body, null, 2)}\n`);
   await writeFile(
@@ -187,7 +215,12 @@ const main = async (): Promise<void> => {
     } catch (err) {
       console.log(`ERR ${target.name}: ${err instanceof Error ? err.message : String(err)}`);
     }
-    await new Promise((r) => setTimeout(r, target.name.startsWith("twelvedata") ? 9_000 : 1_500));
+    const gap = target.name.startsWith("twelvedata")
+      ? env.TWELVEDATA_API_KEY
+        ? TWELVEDATA_GAP_MS
+        : 9_000
+      : 1_500;
+    await new Promise((r) => setTimeout(r, gap));
   }
   const missing = ["CMC_API_KEY", "FINNHUB_API_KEY", "GROQ_API_KEY", "CF_AI_TOKEN"].filter(
     (k) => !env[k],

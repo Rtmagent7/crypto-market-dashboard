@@ -1,0 +1,10 @@
+{
+  "capturedAt": "2026-10-21T14:14:28.081Z",
+  "url": "https://api.twelvedata.com/time_series?symbol=AAPL&interval=1h&outputsize=24&apikey=demo",
+  "status": 200,
+  "keyless": "demo key, single symbol — recapture batch with a real key",
+  "headers": {
+    "cf-cache-status": "DYNAMIC",
+    "date": "Wed, 21 Oct 2026 14:14:28 GMT"
+  }
+}

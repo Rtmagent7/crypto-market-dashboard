@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-10-21T14:14:50.226Z",
+  "url": "https://open.er-api.com/v6/latest/USD",
+  "status": 200,
+  "keyless": "open access endpoint; keyed endpoint adds conversion_rates naming",
+  "headers": {
+    "age": "2356",
+    "cache-control": "public, max-age=3600",
+    "cf-cache-status": "HIT",
+    "date": "Wed, 21 Oct 2026 14:14:50 GMT"
+  }
+}

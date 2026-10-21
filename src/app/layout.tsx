@@ -22,7 +22,8 @@ const plexSans = IBM_Plex_Sans({
 
 const plexCondensed = IBM_Plex_Sans_Condensed({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  // One weight: every condensed use is a figure or a header; fewer bytes before LCP.
+  weight: ["600"],
   display: "swap",
   variable: "--font-plex-condensed",
 });

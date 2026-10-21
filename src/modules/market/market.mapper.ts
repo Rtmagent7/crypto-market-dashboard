@@ -17,7 +17,8 @@ export const fromCoinGecko = (i: CgMarketItem): CryptoAsset => ({
   id: i.id,
   symbol: i.symbol.toUpperCase(),
   name: i.name,
-  imageUrl: i.image,
+  // CoinGecko serves thumb/small/large variants; small (50 px) covers 20–32 px icons on 2× screens.
+  imageUrl: i.image.replace("/large/", "/small/"),
   priceUsd: i.current_price,
   marketCapUsd: i.market_cap,
   rank: i.market_cap_rank ?? 0,

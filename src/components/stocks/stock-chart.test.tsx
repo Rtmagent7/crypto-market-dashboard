@@ -26,4 +26,11 @@ describe("StockChart", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: "24 trading hours" }));
     expect(screen.getByText(/NVDA, 24 trading hours:/)).toBeInTheDocument();
   });
+
+  it("opens on a range that has data when the other is still loading (cold cache)", () => {
+    render(<StockChart tickers={["AAPL"]} hourly={{ AAPL: series(100) }} daily={{}} />);
+    expect(screen.getByText(/AAPL, 24 trading hours:/)).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "1Y" }));
+    expect(screen.getByText(/one-year history is still being fetched/i)).toBeInTheDocument();
+  });
 });

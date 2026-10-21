@@ -27,6 +27,7 @@ const ProviderId = z
     "exchangerate",
     "groq",
     "workers-ai",
+    "worldbank",
     "internal",
   ])
   .openapi("ProviderId");

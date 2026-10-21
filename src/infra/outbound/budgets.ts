@@ -23,6 +23,8 @@ export const BUDGETS = {
   "groq:summary": { period: "day", cap: 800, perMinute: 24, resetTz: "UTC" },
   "groq:chat": { period: "day", cap: 100, perMinute: 10, resetTz: "UTC" },
   "workers-ai": { period: "day", cap: 40, perMinute: 10, resetTz: "UTC" },
+  // No published limit (keyless, CDN-cached); a small cap still stops a bug from hammering it.
+  worldbank: { period: "day", cap: 50, perMinute: 5, resetTz: "UTC" },
 } as const satisfies Record<string, Budget>;
 
 export type BudgetKey = keyof typeof BUDGETS;

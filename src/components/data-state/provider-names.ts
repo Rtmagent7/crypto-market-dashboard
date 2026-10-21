@@ -10,5 +10,6 @@ export const PROVIDER_NAMES: Record<ProviderId, string> = {
   exchangerate: "ExchangeRate-API",
   groq: "Groq",
   "workers-ai": "Cloudflare Workers AI",
+  worldbank: "World Bank",
   internal: "Tidewater",
 };

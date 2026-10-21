@@ -46,7 +46,7 @@ const COLUMNS: readonly {
 ];
 
 /** Table body height is fixed so the swap from skeleton to data never shifts layout (CLS). */
-export const TABLE_VIEWPORT = "h-[560px]";
+export const TABLE_VIEWPORT = "h-[560px] desktop:h-[724px]";
 
 const compare = (a: CryptoAsset, b: CryptoAsset, { key, dir }: Sort): number => {
   const sign = dir === "asc" ? 1 : -1;

@@ -16,7 +16,10 @@ import {
   fromCoinGeckoDetail,
   fromCoinGeckoGlobal,
   fromCoinGeckoTrending,
+  thinSparkline,
 } from "./market.mapper";
+
+const SPARKLINE_POINTS = 42;
 import { getMarketRepository, type MarketRepository } from "./market.repository";
 
 export interface MarketService {
@@ -47,7 +50,12 @@ export const createMarketService = ({
     getTopCoins: async () =>
       toEnvelope(await repository.coingeckoTop50(), {
         source: "coingecko",
-        map: (items) => items.map(fromCoinGecko),
+        // 42 points (one per 4 h) is denser than the 96 px sparkline can show.
+        map: (items) =>
+          items.map((i) => {
+            const asset = fromCoinGecko(i);
+            return { ...asset, sparkline7d: thinSparkline(asset.sparkline7d, SPARKLINE_POINTS) };
+          }),
         now: now(),
       }),
     getGlobal: async () =>

@@ -72,3 +72,13 @@ export const fromCoinGeckoDetail = (i: CgMarketItem): CoinDetail => ({
 
 export const fromCoinGeckoChart = (c: CgMarketChart): PricePoint[] =>
   c.prices.map(([ms, v]) => ({ t: new Date(ms).toISOString(), v }));
+
+/**
+ * Sparklines are drawn 96 px wide; 168 hourly points per coin only inflate the page payload and
+ * hydration. Evenly spaced thinning keeps the first and last price (the 7-day change).
+ */
+export const thinSparkline = (values: readonly number[], points: number): number[] => {
+  if (values.length <= points) return [...values];
+  const step = (values.length - 1) / (points - 1);
+  return Array.from({ length: points }, (_, i) => values[Math.round(i * step)]!);
+};

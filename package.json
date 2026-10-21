@@ -21,6 +21,7 @@
     "openapi": "tsx scripts/generate-openapi.mts",
     "openapi:check": "tsx scripts/generate-openapi.mts --check",
     "fixtures:ai": "tsx --env-file=.env.local scripts/capture-ai-fixture.mts",
+    "test:load": "scripts/load-test.sh",
     "test:visual": "playwright test --project=visual",
     "test:visual:update": "playwright test --project=visual --update-snapshots"
   },
@@ -76,11 +77,11 @@
     "node": ">=24"
   },
   "lint-staged": {
-    "*.{ts,tsx,mjs}": [
-      "eslint --max-warnings=0 --fix",
+    "*.{json,md,css,yml,yaml}": [
       "prettier --write"
     ],
-    "*.{json,md,css,yml,yaml}": [
+    "*.{ts,tsx,js,mjs}": [
+      "eslint --max-warnings=0 --fix",
       "prettier --write"
     ]
   }

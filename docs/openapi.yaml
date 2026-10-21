@@ -149,6 +149,56 @@ components:
         - date
         - rates
       description: null only when status is `unavailable`
+    ChartEnvelope:
+      type: object
+      properties:
+        data:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/PricePoint"
+          description: null only when status is `unavailable`
+        status:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - unavailable
+        source:
+          $ref: "#/components/schemas/ProviderId"
+        fetchedAt:
+          type: string
+          format: date-time
+          description: When the data was fetched (ISO 8601)
+        nextRefreshAt:
+          type: string
+          format: date-time
+          description: Do not poll again before this time (ISO 8601)
+      required:
+        - data
+        - status
+        - source
+        - fetchedAt
+        - nextRefreshAt
+    PricePoint:
+      type: object
+      properties:
+        t:
+          type: string
+          description: ISO 8601 time, or YYYY-MM-DD for daily series
+        v:
+          type: number
+      required:
+        - t
+        - v
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
   parameters: {}
 paths:
   /api/market:
@@ -208,4 +258,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FxEnvelope"
+  /api/coins/{id}/chart:
+    get:
+      summary: Price history for a whitelisted coin
+      description: 1d and 30d share the hourly 30-day series (TTL 6 h); 1y is daily
+        (TTL 24 h); 7d comes from the top-50 sparkline at no extra provider
+        cost. Parameters are validated against the whitelist before any cache or
+        provider access.
+      tags:
+        - market
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - bitcoin
+              - ethereum
+              - tether
+              - binancecoin
+              - ripple
+              - usd-coin
+              - solana
+              - tron
+              - figure-heloc
+              - zcash
+            example: bitcoin
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            enum:
+              - 1d
+              - 7d
+              - 30d
+              - 1y
+            example: 30d
+          required: false
+          name: range
+          in: query
+      responses:
+        "200":
+          description: Fresh or stale series.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartEnvelope"
+        "400":
+          description: Malformed id or unknown range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Coin is not on the whitelist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate limited (per hashed IP). Retry after `Retry-After` seconds.
+        "503":
+          description: No cached data and no provider can be called (budget, breaker or
+            outage).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartEnvelope"
 webhooks: {}

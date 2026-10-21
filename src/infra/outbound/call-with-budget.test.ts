@@ -319,6 +319,22 @@ describe("callWithBudget", () => {
     });
   });
 
+  it("namespaces cache and locks per environment but shares quota counters", async () => {
+    const preview = setup({ namespace: "preview" });
+    const production = setup({ namespace: "production" });
+    const fetcher = vi.fn(async () => ["v"]);
+
+    await preview(call(fetcher));
+    await production(call(fetcher));
+
+    // Each environment fills its own cache (a preview can never poison production)…
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(await store.get("cache:preview:market:top50")).not.toBeNull();
+    expect(await store.get("cache:production:market:top50")).not.toBeNull();
+    // …while both calls count against the one provider quota they share.
+    expect(await store.get(QUOTA_KEY)).toBe(2);
+  });
+
   it("serves expired-but-kept data as stale only within staleFor", async () => {
     await prime(["ancient"], 900 + 7 * 86_400 + 1);
     for (let i = 0; i < BUDGETS.coingecko.cap; i++) await store.incr(QUOTA_KEY, 60);

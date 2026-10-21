@@ -6,7 +6,17 @@ import global from "../../../tests/fixtures/coingecko-global.json";
 import markets from "../../../tests/fixtures/coingecko-markets.json";
 import trending from "../../../tests/fixtures/coingecko-trending.json";
 
-import { fromCoinGecko, fromCoinGeckoGlobal, fromCoinGeckoTrending } from "./market.mapper";
+import chart30d from "../../../tests/fixtures/coingecko-market-chart-30d.json";
+
+import { CgMarketChart } from "@/infra/providers/coingecko.schema";
+
+import {
+  fromCoinGecko,
+  fromCoinGeckoChart,
+  fromCoinGeckoDetail,
+  fromCoinGeckoGlobal,
+  fromCoinGeckoTrending,
+} from "./market.mapper";
 
 const items = CgMarkets.parse(markets);
 const first = items[0]!;
@@ -76,5 +86,28 @@ describe("fromCoinGeckoTrending", () => {
 
   it("caps the list at the 5 rows the panel shows", () => {
     expect(fromCoinGeckoTrending(CgTrending.parse(trending)).length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("fromCoinGeckoDetail", () => {
+  it("adds the coin detail stats grid fields (spec 9A)", () => {
+    const d = fromCoinGeckoDetail(first);
+    expect(d).toMatchObject({
+      id: "bitcoin",
+      volume24hUsd: first.total_volume,
+      athUsd: first.ath,
+      circulatingSupply: first.circulating_supply,
+      high24hUsd: first.high_24h,
+      low24hUsd: first.low_24h,
+    });
+  });
+});
+
+describe("fromCoinGeckoChart", () => {
+  it("maps [ms, price] pairs to ISO PricePoints, oldest first", () => {
+    const points = fromCoinGeckoChart(CgMarketChart.parse(chart30d));
+    expect(points.length).toBeGreaterThan(700);
+    expect(points[0]!.t).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(points[0]!.t < points.at(-1)!.t).toBe(true);
   });
 });

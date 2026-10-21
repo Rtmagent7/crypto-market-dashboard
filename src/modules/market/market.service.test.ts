@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { CgGlobal, CgMarkets, CgTrending } from "@/infra/providers/coingecko.schema";
+import { CgGlobal, CgMarketChart, CgMarkets, CgTrending } from "@/infra/providers/coingecko.schema";
 
 import global from "../../../tests/fixtures/coingecko-global.json";
+import chart1y from "../../../tests/fixtures/coingecko-market-chart-1y.json";
+import chart30d from "../../../tests/fixtures/coingecko-market-chart-30d.json";
 import markets from "../../../tests/fixtures/coingecko-markets.json";
 import trending from "../../../tests/fixtures/coingecko-trending.json";
 
@@ -22,6 +24,9 @@ const fakeRepository = (overrides: Partial<MarketRepository> = {}): MarketReposi
   coingeckoTop50: vi.fn(async () => fresh(CgMarkets.parse(markets))),
   coingeckoGlobal: vi.fn(async () => fresh(CgGlobal.parse(global))),
   coingeckoTrending: vi.fn(async () => fresh(CgTrending.parse(trending))),
+  coingeckoChart: vi.fn(async (_id: string, days: 30 | 365) =>
+    fresh(CgMarketChart.parse(days === 30 ? chart30d : chart1y)),
+  ),
   ...overrides,
 });
 
@@ -67,5 +72,40 @@ describe("market service", () => {
     const [g, t] = await Promise.all([service.getGlobal(), service.getTrending()]);
     expect(g.data?.totalMarketCapUsd).toBeGreaterThan(1e12);
     expect(t.data?.length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("market service — coin detail", () => {
+  it("returns the detail of a coin from the shared top-50 data", async () => {
+    const env = await createMarketService({ repository: fakeRepository(), now: () => NOW }).getCoin(
+      "ethereum",
+    );
+    expect(env.status).toBe("fresh");
+    expect(env.data).toMatchObject({ id: "ethereum", symbol: "ETH", athUsd: expect.any(Number) });
+  });
+
+  it("7d comes from the sparkline: no chart call at all", async () => {
+    const repository = fakeRepository();
+    const env = await createMarketService({ repository, now: () => NOW }).getChart("bitcoin", "7d");
+    expect(env.data?.length).toBeGreaterThan(100);
+    expect(repository.coingeckoChart).not.toHaveBeenCalled();
+  });
+
+  it("1d and 30d share the 30-day series; 1y uses the 365-day one", async () => {
+    const repository = fakeRepository();
+    const service = createMarketService({ repository, now: () => NOW });
+    const [day, month, year] = await Promise.all([
+      service.getChart("bitcoin", "1d"),
+      service.getChart("bitcoin", "30d"),
+      service.getChart("bitcoin", "1y"),
+    ]);
+    expect(day.data!.length).toBeLessThanOrEqual(25);
+    expect(month.data!.length).toBeGreaterThan(700);
+    expect(year.data!.length).toBeGreaterThan(360);
+    expect(vi.mocked(repository.coingeckoChart).mock.calls).toEqual([
+      ["bitcoin", 30],
+      ["bitcoin", 30],
+      ["bitcoin", 365],
+    ]);
   });
 });

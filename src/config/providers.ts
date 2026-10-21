@@ -85,6 +85,16 @@ export const STATUS_PROVIDERS = [
     keyEnv: "CF_AI_TOKEN",
     backup: null,
   },
+  {
+    id: "worldbank",
+    name: "World Bank",
+    role: "optional",
+    serves: "Indonesia macro indicators",
+    cacheKey: "worldbank:indicators:IDN",
+    ttl: CACHE_POLICY["worldbank:indicators"].ttl,
+    keyEnv: null,
+    backup: null,
+  },
 ] as const;
 
 export type StatusProviderId = (typeof STATUS_PROVIDERS)[number]["id"];

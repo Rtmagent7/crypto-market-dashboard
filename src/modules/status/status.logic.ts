@@ -65,6 +65,9 @@ export const computeStatuses = (
     } else if (p.role === "backup" && r.fetchedAt === null) {
       state = "standby";
       reason = "Ready, but not needed: the primary provider is serving.";
+    } else if (p.role === "optional" && r.fetchedAt === null) {
+      state = "standby";
+      reason = "Ready; called on the first visit to its page.";
     } else if (r.fetchedAt !== null && now - r.fetchedAt > staleAfterMs(p.ttl)) {
       state = "degraded";
       reason = "Data is older than expected; refreshes are not succeeding.";

@@ -369,6 +369,22 @@ describe("callWithBudget", () => {
     expect(await store.get(QUOTA_KEY)).toBe(2);
   });
 
+  it("derives the TTL from the response when policy is a function (e.g. market open/closed)", async () => {
+    const callWithBudget = setup();
+    const byState = (d: { open: boolean }): CachePolicy =>
+      d.open ? { ttl: 1_200, staleFor: 86_400 } : { ttl: 21_600, staleFor: 86_400 };
+
+    const open = await callWithBudget(
+      call(async () => ({ open: true }), { cacheKey: "q-open", policy: byState }),
+    );
+    const closed = await callWithBudget(
+      call(async () => ({ open: false }), { cacheKey: "q-closed", policy: byState }),
+    );
+
+    expect(open).toMatchObject({ expiresAt: T0 + 1_200_000 });
+    expect(closed).toMatchObject({ expiresAt: T0 + 21_600_000 });
+  });
+
   it("serves expired-but-kept data as stale only within staleFor", async () => {
     await prime(["ancient"], 900 + 7 * 86_400 + 1);
     for (let i = 0; i < BUDGETS.coingecko.cap; i++) await store.incr(QUOTA_KEY, 60);

@@ -6,7 +6,7 @@ import { writeFile } from "node:fs/promises";
 
 import { CgGlobal, CgMarkets } from "../src/infra/providers/coingecko.schema";
 import { FfLatest, FfRange } from "../src/infra/providers/frankfurter.schema";
-import { buildMarketContext, buildMessages } from "../src/modules/ai/prompts";
+import { buildChatMessages, buildMarketContext, buildMessages } from "../src/modules/ai/prompts";
 import { fromFrankfurter, fromFrankfurterRange } from "../src/modules/fx/fx.mapper";
 import { fromCoinGecko, fromCoinGeckoGlobal } from "../src/modules/market/market.mapper";
 import { AI } from "../src/config/ai";
@@ -26,6 +26,29 @@ const context = buildMarketContext({
   global: fromCoinGeckoGlobal(CgGlobal.parse(global)),
   usdIdr: { rate: rates.rates.IDR!, date: rates.date, change1dPct: 0.32, history },
 });
+
+const mode = process.argv[2] ?? "summary";
+
+if (mode === "chat") {
+  // Ask AI: one real *streamed* answer (SSE) from the chat model, saved byte for byte.
+  const stream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      model: AI.chatModel,
+      messages: buildChatMessages(context, "How is Bitcoin doing today compared with Ethereum?"),
+      max_completion_tokens: AI.maxTokens,
+      temperature: 0.2,
+      reasoning_effort: "low",
+      include_reasoning: false,
+      stream: true,
+    }),
+  });
+  const text = await stream.text();
+  await writeFile("tests/fixtures/groq-chat-stream.sse", text);
+  console.log(stream.status, stream.headers.get("content-type"), `${text.split("\n\n").length} events`);
+  process.exit(0);
+}
 
 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
   method: "POST",

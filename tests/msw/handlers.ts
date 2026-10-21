@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { http, HttpResponse, type HttpHandler } from "msw";
 
 import cgChart1y from "../fixtures/coingecko-market-chart-1y.json";
@@ -19,6 +22,13 @@ import tdHourly from "../fixtures/twelvedata-time-series-1h.json";
 const CG = "https://api.coingecko.com/api/v3";
 const FF = "https://api.frankfurter.dev/v1";
 const TD = "https://api.twelvedata.com";
+
+// A real captured Groq stream (`npm run fixtures:ai -- chat`), replayed byte for byte. Read from
+// the repo root: both Vitest and the mock-mode Next server run there.
+const groqChatStream = readFileSync(
+  join(process.cwd(), "tests/fixtures/groq-chat-stream.sse"),
+  "utf8",
+);
 
 /** Counts requests per logical endpoint so quota tests can assert real call volume. */
 export type HitCounter = Map<string, number>;
@@ -55,8 +65,14 @@ export const createProviderHandlers = (hits: HitCounter = new Map()): HttpHandle
       "https://open.er-api.com/v6/latest/USD",
       () => (hit("exchangerate:/latest"), HttpResponse.json(erLatest)),
     ),
-    http.post("https://api.groq.com/openai/v1/chat/completions", () => {
+    http.post("https://api.groq.com/openai/v1/chat/completions", async ({ request }) => {
       hit("groq:/chat/completions");
+      const body = (await request.json()) as { stream?: boolean } | null;
+      if (body?.stream) {
+        return new HttpResponse(groqChatStream, {
+          headers: { "content-type": "text/event-stream" },
+        });
+      }
       return HttpResponse.json(groqSummary);
     }),
   ];

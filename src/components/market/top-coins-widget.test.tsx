@@ -11,6 +11,9 @@ import { fixtureCoins } from "../../../tests/factories/market";
 import { CoinTableSkeleton } from "./coin-table-skeleton";
 import { TopCoinsWidget } from "./top-coins-widget";
 
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element -- test double for next/image
   default: ({ alt, src }: { alt: string; src: string }): ReactNode => <img alt={alt} src={src} />,
@@ -103,5 +106,29 @@ describe("CoinTable behavior", () => {
   it("renders a 7-day sparkline with an accessible trend label", () => {
     renderWidget(envelope("fresh"));
     expect(screen.getAllByRole("img", { name: /7-day trend: (up|down|flat)/ }).length).toBe(50);
+  });
+});
+
+describe("row navigation (whitelisted coins only)", () => {
+  it("Enter on a top-10 row opens its detail page; other rows are not links", () => {
+    push.mockClear();
+    renderWidget(envelope("fresh"));
+    const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: "Enter" });
+    expect(push).toHaveBeenCalledWith("/coins/bitcoin");
+
+    const outside = rows.find((r) => !r.dataset.href)!;
+    expect(within(outside).queryByRole("link")).not.toBeInTheDocument();
+    fireEvent.click(outside);
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it("a click anywhere on a top-10 row navigates through one delegated handler", () => {
+    push.mockClear();
+    renderWidget(envelope("fresh"));
+    const row = within(screen.getByRole("table")).getAllByRole("row")[2]!;
+    fireEvent.click(within(row).getAllByRole("cell")[1]!);
+    expect(push).toHaveBeenCalledWith("/coins/ethereum");
   });
 });

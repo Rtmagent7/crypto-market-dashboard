@@ -1,0 +1,81 @@
+name: warm-cache
+
+# Keeps production caches warm so the first visitor after a quiet period never waits on a
+# provider (ADR 0005). Every call goes through callWithBudget, so this can never exceed a cap.
+# GitHub may start scheduled runs a few minutes late; stale data is served meanwhile.
+on:
+  schedule:
+    - cron: "*/15 * * * *" # market: top 50, global, trending
+    - cron: "*/20 * * * 1-5" # stocks: the service checks is_market_open itself
+    - cron: "0 */6 * * *" # fx
+    - cron: "0 */3 * * *" # ai brief
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Scope to warm
+        required: true
+        type: choice
+        options: [market, stocks, fx, ai]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: warm-${{ github.event.schedule || inputs.scope }}
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pick scope
+        id: scope
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT: ${{ inputs.scope }}
+        run: |
+          case "$SCHEDULE" in
+            "*/15 * * * *")   scope=market ;;
+            "*/20 * * * 1-5") scope=stocks ;;
+            "0 */6 * * *")    scope=fx ;;
+            "0 */3 * * *")    scope=ai ;;
+            *)                scope="$INPUT" ;;
+          esac
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
+      - name: Warm ${{ steps.scope.outputs.scope }}
+        env:
+          BASE_URL: ${{ vars.WARM_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SCOPE: ${{ steps.scope.outputs.scope }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-delay 10 \
+            -X POST -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/warm?scope=${SCOPE}"
+
+      - name: Alert after two failures in a row
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          SCOPE: ${{ steps.scope.outputs.scope }}
+        run: |
+          previous=$(gh run list -R "$GITHUB_REPOSITORY" --workflow warm-cache.yml --limit 20 \
+            --json databaseId,conclusion,displayTitle \
+            --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID})][0].conclusion")
+          echo "Previous run: $previous"
+          if [ "$previous" = "failure" ]; then
+            msg="⚠️ warm-cache failed twice in a row (scope: ${SCOPE}). Stale data is being served; check /status and the runbook."
+            if [ -n "$ALERT_WEBHOOK_URL" ]; then
+              if echo "$ALERT_WEBHOOK_URL" | grep -q "api.telegram.org"; then
+                body=$(jq -n --arg t "$msg" '{text: $t}')
+              else
+                body=$(jq -n --arg t "$msg" '{content: $t}')
+              fi
+              curl --silent --show-error -X POST -H "Content-Type: application/json" -d "$body" "$ALERT_WEBHOOK_URL"
+            else
+              echo "::warning::$msg (ALERT_WEBHOOK_URL is not set)"
+            fi
+          fi

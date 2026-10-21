@@ -111,3 +111,15 @@ describe("fromCoinGeckoChart", () => {
     expect(points[0]!.t < points.at(-1)!.t).toBe(true);
   });
 });
+
+describe("thinSparkline", () => {
+  it("keeps first and last and evenly spaced points in between", async () => {
+    const { thinSparkline } = await import("./market.mapper");
+    const values = Array.from({ length: 168 }, (_, i) => i);
+    const thin = thinSparkline(values, 42);
+    expect(thin).toHaveLength(42);
+    expect(thin[0]).toBe(0);
+    expect(thin.at(-1)).toBe(167);
+    expect(thinSparkline([1, 2, 3], 42)).toEqual([1, 2, 3]);
+  });
+});

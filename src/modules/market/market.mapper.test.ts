@@ -27,13 +27,17 @@ describe("fromCoinGecko (spec 6.3)", () => {
       id: first.id,
       symbol: first.symbol.toUpperCase(),
       name: first.name,
-      imageUrl: first.image,
+      imageUrl: first.image.replace("/large/", "/small/"),
       priceUsd: first.current_price,
       marketCapUsd: first.market_cap,
       rank: first.market_cap_rank,
       change24hPct: first.price_change_percentage_24h,
       sparkline7d: first.sparkline_in_7d?.price,
     });
+  });
+
+  it("uses CoinGecko's small icon variant: ~4× fewer bytes than large for a 20 px icon", () => {
+    expect(fromCoinGecko(first).imageUrl).toMatch(/\/small\//);
   });
 
   it("falls back to rank 0 and an empty sparkline when the provider omits them", () => {

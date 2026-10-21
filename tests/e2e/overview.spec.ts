@@ -48,4 +48,17 @@ test.describe("overview with market data", () => {
     await page.waitForLoadState("networkidle");
     expect(external).toEqual([]);
   });
+
+  test("shows the AI brief as plain text with its model, prompt version and disclaimer", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const brief = page.getByRole("region", { name: "AI market brief" });
+    await expect(brief.getByText(/Bitcoin/)).toBeVisible();
+    await expect(brief.getByText(/Educational summary, not financial advice\./)).toBeVisible();
+    await expect(
+      brief.getByText(/openai\/gpt-oss-120b · prompt \d{4}-\d{2}-\d{2}\.\d+/),
+    ).toBeVisible();
+    await expect(brief.locator("a[href^='http']")).toHaveCount(0);
+  });
 });

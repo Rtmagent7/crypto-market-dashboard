@@ -7,14 +7,13 @@ import { MarketPulseSkeleton } from "@/components/market/market-pulse-skeleton";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { AiBrief } from "./_widgets/ai-brief";
 import { FxPanel } from "./_widgets/fx-panel";
 import { MarketPulse } from "./_widgets/market-pulse";
 import { TopCoins } from "./_widgets/top-coins";
 import { Trending } from "./_widgets/trending";
 
 export const metadata: Metadata = { title: "Overview" };
-
-const NOT_CONNECTED = "Not connected yet";
 
 function TopCoinsSkeleton(): ReactNode {
   return (
@@ -41,6 +40,31 @@ function TrendingSkeleton(): ReactNode {
           </li>
         ))}
       </ul>
+    </Panel>
+  );
+}
+
+function AiBriefSkeleton(): ReactNode {
+  return (
+    <Panel id="ai-brief" title="AI market brief" className="[grid-area:brief]">
+      <div role="status" className="flex h-18 flex-col gap-2.5 overflow-hidden tablet:h-66">
+        <span className="sr-only">Writing the brief</span>
+        {[
+          "w-full",
+          "w-11/12",
+          "w-full",
+          "w-10/12",
+          "w-full",
+          "w-9/12",
+          "w-full",
+          "w-11/12",
+          "w-8/12",
+        ].map((w, i) => (
+          <Skeleton key={i} className={`h-3 ${w}`} />
+        ))}
+        <span aria-hidden className="h-4 w-2 bg-accent motion-safe:animate-pulse" />
+      </div>
+      <p className="mt-3 text-meta text-muted">Educational summary, not financial advice.</p>
     </Panel>
   );
 }
@@ -72,19 +96,9 @@ export default function OverviewPage(): ReactNode {
           <TopCoins />
         </Suspense>
 
-        <Panel
-          id="ai-brief"
-          title="AI market brief"
-          meta={NOT_CONNECTED}
-          className="[grid-area:brief]"
-        >
-          <div className="flex h-40 flex-col gap-2.5">
-            {["w-full", "w-11/12", "w-full", "w-10/12", "w-full", "w-7/12"].map((w, i) => (
-              <Skeleton key={i} className={`h-3 ${w}`} />
-            ))}
-          </div>
-          <p className="mt-3 text-meta text-muted">Educational summary, not financial advice.</p>
-        </Panel>
+        <Suspense fallback={<AiBriefSkeleton />}>
+          <AiBrief />
+        </Suspense>
 
         <Suspense fallback={<TrendingSkeleton />}>
           <Trending />

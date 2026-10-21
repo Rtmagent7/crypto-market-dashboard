@@ -3,11 +3,12 @@ import {
   ArrowLeftRight,
   ChartCandlestick,
   LayoutDashboard,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
-  href: "/" | "/stocks" | "/fx" | "/status";
+  href: "/" | "/stocks" | "/fx" | "/macro" | "/status";
   label: string;
   icon: LucideIcon;
 }
@@ -16,6 +17,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/stocks", label: "Stocks", icon: ChartCandlestick },
   { href: "/fx", label: "FX", icon: ArrowLeftRight },
+  { href: "/macro", label: "Macro", icon: Landmark },
   { href: "/status", label: "Status", icon: Activity },
 ];
 

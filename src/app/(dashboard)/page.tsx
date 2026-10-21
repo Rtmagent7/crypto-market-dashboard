@@ -7,6 +7,7 @@ import { MarketPulseSkeleton } from "@/components/market/market-pulse-skeleton";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { FxPanel } from "./_widgets/fx-panel";
 import { MarketPulse } from "./_widgets/market-pulse";
 import { TopCoins } from "./_widgets/top-coins";
 import { Trending } from "./_widgets/trending";
@@ -40,6 +41,17 @@ function TrendingSkeleton(): ReactNode {
           </li>
         ))}
       </ul>
+    </Panel>
+  );
+}
+
+function FxSkeleton(): ReactNode {
+  return (
+    <Panel id="fx" title="USD/IDR" className="[grid-area:fx]">
+      <div className="flex h-16 flex-col justify-center gap-2">
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="h-3 w-40" />
+      </div>
     </Panel>
   );
 }
@@ -78,12 +90,9 @@ export default function OverviewPage(): ReactNode {
           <Trending />
         </Suspense>
 
-        <Panel id="fx" title="USD/IDR" meta={NOT_CONNECTED} className="[grid-area:fx]">
-          <div className="flex h-16 flex-col justify-center gap-2">
-            <Skeleton className="h-7 w-32" />
-            <Skeleton className="h-3 w-20" />
-          </div>
-        </Panel>
+        <Suspense fallback={<FxSkeleton />}>
+          <FxPanel />
+        </Suspense>
       </div>
     </>
   );

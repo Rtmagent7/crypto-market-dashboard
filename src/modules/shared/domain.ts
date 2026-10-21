@@ -9,7 +9,9 @@ export type ProviderId =
   | "frankfurter"
   | "exchangerate"
   | "groq"
-  | "workers-ai";
+  | "workers-ai"
+  /** Data computed by this app itself (e.g. /api/status reads its own Redis counters). */
+  | "internal";
 
 export type DataStatus = "fresh" | "stale" | "unavailable";
 
@@ -88,4 +90,25 @@ export interface CoinDetail extends CryptoAsset {
   circulatingSupply: number | null;
   high24hUsd: number | null;
   low24hUsd: number | null;
+}
+
+export type ProviderState = "operational" | "degraded" | "down" | "standby";
+
+export interface ProviderStatus {
+  /** Budget key, e.g. "coingecko" or "groq:summary". */
+  id: string;
+  name: string;
+  role: "core" | "backup" | "optional";
+  /** What this provider supplies, in the user's words. */
+  serves: string;
+  state: ProviderState;
+  /** Why the state is not operational, as one short sentence. */
+  reason: string | null;
+  quotaUsed: number;
+  quotaCap: number;
+  quotaPeriod: "day" | "month";
+  /** When this provider last delivered data (ISO), null if never. */
+  lastDataAt: string | null;
+  /** Name of the backup currently serving instead of this provider, if any. */
+  fallbackActive: string | null;
 }

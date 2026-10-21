@@ -40,3 +40,6 @@ export const RESILIENCE = {
   breakerWindowSeconds: 300,
   breakerOpenSeconds: 600,
 } as const;
+
+/** Quota alerts fire once per period when usage crosses these shares of the cap (spec §10.5). */
+export const ALERT_THRESHOLDS_PCT = [70, 90] as const;

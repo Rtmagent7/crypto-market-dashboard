@@ -114,3 +114,10 @@ export interface ProviderStatus {
 }
 
 export type StockSeriesRange = "1d" | "1y";
+
+export interface MarketBrief {
+  /** Plain text, at most ~120 words. Rendered as text, never HTML. */
+  text: string;
+  model: string;
+  promptVersion: string;
+}

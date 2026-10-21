@@ -68,7 +68,7 @@ export function StatusTable({ initial }: { initial: StatusEnvelope }): ReactNode
                 <span className="block font-medium">{p.name}</span>
                 <span className="block text-meta text-muted">
                   {p.serves}
-                  {p.role === "backup" ? " · backup" : ""}
+                  {p.role === "core" ? "" : ` · ${p.role}`}
                 </span>
               </th>
               <td className="px-2 py-3">

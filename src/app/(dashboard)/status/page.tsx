@@ -31,7 +31,8 @@ export default function StatusPage(): ReactNode {
       <Suspense
         fallback={
           <Panel id="providers" title="Providers">
-            <Skeleton className="h-[520px] w-full rounded-control" />
+            {/* Measured table heights (nine providers): rows wrap less as the page widens. */}
+            <Skeleton className="h-[833px] w-full rounded-control min-[620px]:h-[753px] tablet:h-[689px] desktop:h-[673px]" />
           </Panel>
         }
       >

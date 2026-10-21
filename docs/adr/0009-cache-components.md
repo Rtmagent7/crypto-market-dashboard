@@ -1,6 +1,6 @@
 # ADR 0009 — Use Next.js 16 Cache Components instead of route-segment `revalidate`
 
-- Status: **Proposed** (awaiting owner approval before Sprint 2)
+- Status: Accepted (owner delegated the decision, 2026-10-21)
 - Date: 2026-10-21
 
 ## Context

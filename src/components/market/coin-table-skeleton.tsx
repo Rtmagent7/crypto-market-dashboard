@@ -6,8 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui.store";
 
+import { TABLE_VIEWPORT } from "./coin-table";
+
 const COLUMNS = ["#", "Coin", "Price", "24h", "7d", "Market cap"] as const;
-const PLACEHOLDER_ROWS = 10;
+const PLACEHOLDER_ROWS = 15;
 const CELL_WIDTHS = ["w-16", "w-12", "w-24", "w-16"] as const;
 
 /** Loading state for the top-50 table: real header, fixed 36 / 48 px rows (CLS-safe). */
@@ -16,8 +18,8 @@ export function CoinTableSkeleton(): ReactNode {
   const rowHeight = density === "compact" ? "h-9" : "h-12";
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] border-collapse text-cell">
+    <div className={cn("overflow-hidden", TABLE_VIEWPORT)}>
+      <table className="w-full border-collapse text-cell">
         <caption className="sr-only">Top 50 coins by market cap (loading)</caption>
         <thead className="sticky top-0 bg-surface-raised font-condensed text-meta font-medium text-muted">
           <tr>

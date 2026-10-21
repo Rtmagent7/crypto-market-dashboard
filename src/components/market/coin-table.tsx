@@ -1,16 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useDeferredValue,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 
 import { Sparkline } from "@/components/charts/sparkline";
+import { isWhitelistedCoin } from "@/config/coins";
 import { formatCompactUsd, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CryptoAsset } from "@/modules/shared/domain";
@@ -65,6 +69,7 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
     [coins, deferredSort],
   );
   const tbody = useRef<HTMLTableSectionElement>(null);
+  const router = useRouter();
   const [focusIndex, setFocusIndex] = useState(0);
 
   const toggleSort = (key: SortKey): void =>
@@ -74,11 +79,24 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
         : { key, dir: key === "rank" || key === "name" ? "asc" : "desc" },
     );
 
-  // Event delegation: one handler for every row instead of 50 listeners.
+  // Event delegation: one handler pair for all 50 rows instead of 100 listeners.
+  const onClick = (e: MouseEvent<HTMLTableSectionElement>): void => {
+    const target = e.target as HTMLElement;
+    if (target.closest("a, button") || window.getSelection()?.toString()) return;
+    const href = target.closest("tr")?.dataset.href;
+    if (href) router.push(href);
+  };
+
   const onKeyDown = (e: KeyboardEvent<HTMLTableSectionElement>): void => {
     const all = Array.from(tbody.current?.rows ?? []);
-    const current = all.indexOf((e.target as HTMLElement).closest("tr") as HTMLTableRowElement);
+    const row = (e.target as HTMLElement).closest("tr") as HTMLTableRowElement | null;
+    const current = row ? all.indexOf(row) : -1;
     if (current === -1) return;
+    if (e.key === "Enter" && row?.dataset.href && e.target === row) {
+      e.preventDefault();
+      router.push(row.dataset.href);
+      return;
+    }
     const next =
       e.key === "ArrowDown"
         ? Math.min(all.length - 1, current + 1)
@@ -142,50 +160,66 @@ export function CoinTable({ coins }: { coins: readonly CryptoAsset[] }): ReactNo
             })}
           </tr>
         </thead>
-        <tbody ref={tbody} onKeyDown={onKeyDown}>
-          {rows.map((c, i) => (
-            <tr
-              key={c.id}
-              tabIndex={i === focusIndex ? 0 : -1}
-              onFocus={() => setFocusIndex(i)}
-              className={cn(
-                rowHeight,
-                "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-              )}
-            >
-              <td className="px-2 text-muted tabular-nums">{c.rank || "—"}</td>
-              <th scope="row" className="max-w-0 px-2 text-left font-normal">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Image
-                    src={c.imageUrl}
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="size-5 shrink-0 rounded-full"
-                  />
-                  {/* Narrow containers (phones) lead with the symbol; the name stays for AT. */}
-                  <span className="truncate font-medium @max-[30rem]:sr-only" title={c.name}>
-                    {c.name}
-                  </span>
-                  <span className="shrink-0 text-meta text-muted @max-[30rem]:text-cell @max-[30rem]:font-medium @max-[30rem]:text-text">
-                    {c.symbol}
-                  </span>
-                </div>
-              </th>
-              <td className="px-2 text-right font-medium whitespace-nowrap tabular-nums">
-                {formatUsd(c.priceUsd)}
-              </td>
-              <td className="px-2 text-right tabular-nums">
-                <ChangeCell pct={c.change24hPct} />
-              </td>
-              <td className="px-2 text-right @max-[30rem]:hidden">
-                <Sparkline values={c.sparkline7d} />
-              </td>
-              <td className="px-2 text-right whitespace-nowrap tabular-nums @max-[38rem]:hidden">
-                {formatCompactUsd(c.marketCapUsd)}
-              </td>
-            </tr>
-          ))}
+        <tbody ref={tbody} onKeyDown={onKeyDown} onClick={onClick}>
+          {rows.map((c, i) => {
+            const href = isWhitelistedCoin(c.id) ? `/coins/${c.id}` : undefined;
+            return (
+              <tr
+                key={c.id}
+                data-href={href}
+                tabIndex={i === focusIndex ? 0 : -1}
+                onFocus={() => setFocusIndex(i)}
+                className={cn(
+                  rowHeight,
+                  href ? "cursor-pointer" : "cursor-default",
+                  "border-b border-line/60 outline-none hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+                )}
+              >
+                <td className="px-2 text-muted tabular-nums">{c.rank || "—"}</td>
+                <th scope="row" className="max-w-0 px-2 text-left font-normal">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Image
+                      src={c.imageUrl}
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="size-5 shrink-0 rounded-full"
+                    />
+                    {/* Narrow containers (phones) lead with the symbol; the name stays for AT. */}
+                    {href ? (
+                      <Link
+                        href={href}
+                        tabIndex={-1}
+                        className="truncate font-medium hover:underline hover:underline-offset-2 @max-[30rem]:sr-only"
+                        title={c.name}
+                      >
+                        {c.name}
+                      </Link>
+                    ) : (
+                      <span className="truncate font-medium @max-[30rem]:sr-only" title={c.name}>
+                        {c.name}
+                      </span>
+                    )}
+                    <span className="shrink-0 text-meta text-muted @max-[30rem]:text-cell @max-[30rem]:font-medium @max-[30rem]:text-text">
+                      {c.symbol}
+                    </span>
+                  </div>
+                </th>
+                <td className="px-2 text-right font-medium whitespace-nowrap tabular-nums">
+                  {formatUsd(c.priceUsd)}
+                </td>
+                <td className="px-2 text-right tabular-nums">
+                  <ChangeCell pct={c.change24hPct} />
+                </td>
+                <td className="px-2 text-right @max-[30rem]:hidden">
+                  <Sparkline values={c.sparkline7d} />
+                </td>
+                <td className="px-2 text-right whitespace-nowrap tabular-nums @max-[38rem]:hidden">
+                  {formatCompactUsd(c.marketCapUsd)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

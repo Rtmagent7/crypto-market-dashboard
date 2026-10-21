@@ -14,7 +14,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function visitOverview() {
   // A distinct client address per virtual user, like real visitors (the per-IP limit is 120/min).
   const headers = { "x-forwarded-for": `198.51.100.${__VU}` };
   const page = http.get(`${BASE}/`, { headers, tags: { endpoint: "page" } });

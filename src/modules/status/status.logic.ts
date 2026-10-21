@@ -48,7 +48,10 @@ export const computeStatuses = (
     let reason: string | null = null;
     if (!r.configured) {
       state = "standby";
-      reason = "No API key configured; this backup is not available.";
+      reason =
+        p.role === "backup"
+          ? "No API key configured; this backup is not available."
+          : "No API key configured.";
     } else if (r.breakerOpen) {
       state = "down";
       reason =

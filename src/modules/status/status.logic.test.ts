@@ -104,6 +104,14 @@ describe("computeStatuses (spec 10.6)", () => {
     });
   });
 
+  it("a core provider without a key says so without calling itself a backup", () => {
+    const row = computeStatuses(base({ coingecko: { configured: false } }), { now: NOW }).find(
+      (r) => r.id === "coingecko",
+    )!;
+    expect(row.state).toBe("standby");
+    expect(row.reason).toBe("No API key configured.");
+  });
+
   it("names the backup when it served more recently than the primary", () => {
     const rows = computeStatuses(base({ exchangerate: { fetchedAt: NOW - 60_000 } }), { now: NOW });
     expect(byId(rows, "frankfurter").fallbackActive).toBe("ExchangeRate-API");

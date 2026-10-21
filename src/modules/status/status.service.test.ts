@@ -55,6 +55,23 @@ describe("status service reads the gate's own keys", () => {
     expect(rows.coinmarketcap).toMatchObject({ state: "standby" });
   });
 
+  it("in mock mode every provider counts as configured: fixtures serve them all", async () => {
+    const env = await createStatusService({
+      repository: createStatusRepository({
+        store: createMemoryStore(() => NOW),
+        env: {
+          BUDGET_CAP_RATIO: 1,
+          VERCEL_ENV: undefined,
+          NODE_ENV: "production",
+          MOCK_PROVIDERS: "1",
+        },
+      }),
+      now: () => NOW,
+    }).getStatus();
+    expect(env.data!.find((r) => r.id === "coingecko")!.reason ?? "").not.toMatch(/api key/i);
+    expect(env.data!.find((r) => r.id === "coinmarketcap")!.reason ?? "").not.toMatch(/api key/i);
+  });
+
   it("is unavailable, not invented, when Redis cannot be read", async () => {
     const env = await createStatusService({
       repository: { snapshot: async () => Promise.reject(new Error("redis down")) },

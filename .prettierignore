@@ -6,3 +6,4 @@ test-results
 package-lock.json
 tests/fixtures
 src/components/ui
+docs/openapi.yaml

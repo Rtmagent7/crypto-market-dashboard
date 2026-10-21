@@ -31,6 +31,8 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
+      - name: OpenAPI spec matches the Zod contract
+        run: npm run openapi:check
       - name: Design tokens only (no raw hex in components)
         run: npm run check:tokens
       - name: Conventional Commits

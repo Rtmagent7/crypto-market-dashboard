@@ -13,14 +13,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
     "check:tokens": "node scripts/check-raw-hex.mjs",
     "analyze": "ANALYZE=true next build",
     "prepare": "husky",
     "fixtures:capture": "node --env-file-if-exists=.env.local scripts/capture-fixtures.mts",
     "openapi": "tsx scripts/generate-openapi.mts",
     "openapi:check": "tsx scripts/generate-openapi.mts --check",
-    "fixtures:ai": "tsx --env-file=.env.local scripts/capture-ai-fixture.mts"
+    "fixtures:ai": "tsx --env-file=.env.local scripts/capture-ai-fixture.mts",
+    "test:visual": "playwright test --project=visual",
+    "test:visual:update": "playwright test --project=visual --update-snapshots"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",

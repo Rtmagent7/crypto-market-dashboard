@@ -6,7 +6,9 @@ name: warm-cache
 on:
   schedule:
     - cron: "*/15 * * * *" # market: top 50, global, trending
-    - cron: "*/20 * * * 1-5" # stocks: the service checks is_market_open itself
+    - cron: "*/20 * * * 1-5" # stocks quotes at :00/:20/:40 (the service checks is_market_open)
+    - cron: "5 * * * 1-5" # stocks hourly bars at :05 — a different minute (8 credits/min)
+    - cron: "20 21 * * 1-5" # stocks daily bars after the close (16:20 EST / 17:20 EDT)
     - cron: "0 */6 * * *" # fx
     - cron: "0 */3 * * *" # ai brief
   workflow_dispatch:
@@ -15,7 +17,7 @@ on:
         description: Scope to warm
         required: true
         type: choice
-        options: [market, stocks, fx, ai]
+        options: [market, stocks, stocks-intraday, stocks-daily, fx, ai]
 
 permissions:
   contents: read
@@ -39,6 +41,8 @@ jobs:
           case "$SCHEDULE" in
             "*/15 * * * *")   scope=market ;;
             "*/20 * * * 1-5") scope=stocks ;;
+            "5 * * * 1-5")    scope=stocks-intraday ;;
+            "20 21 * * 1-5")  scope=stocks-daily ;;
             "0 */6 * * *")    scope=fx ;;
             "0 */3 * * *")    scope=ai ;;
             *)                scope="$INPUT" ;;

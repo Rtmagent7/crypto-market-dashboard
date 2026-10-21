@@ -2,7 +2,7 @@ import type { CachePolicy } from "@/config/cache-policy";
 import type { Logger } from "@/infra/logger";
 import type { KeyValueStore } from "@/infra/store";
 
-import { BUDGETS, RESILIENCE, type BudgetKey } from "./budgets";
+import { ALERT_THRESHOLDS_PCT, BUDGETS, RESILIENCE, type BudgetKey } from "./budgets";
 import { minuteKey, periodKey, periodTtlSeconds } from "./day-key";
 import { scopedKeys, sharedKeys, type CacheEntry } from "./keys";
 import { ContractError, ProviderHttpError, ProviderTimeoutError, isRetryable } from "./errors";
@@ -104,6 +104,18 @@ export const createCallWithBudget = ({
     if (used > cap) {
       await store.decr(periodCounter);
       return { ok: false, reason: "budget-exhausted" };
+    }
+    // INCR is atomic, so exactly one request observes the crossing value: one signal per period.
+    for (const pct of ALERT_THRESHOLDS_PCT) {
+      if (used === Math.ceil((cap * pct) / 100)) {
+        logger.log("warn", "quota_threshold", {
+          provider: budget,
+          threshold: pct,
+          used,
+          cap,
+          period: periodKey(period, resetTz, t),
+        });
+      }
     }
     const usedThisMinute = await store.incr(minuteCounter, 120);
     if (usedThisMinute > perMinute) {

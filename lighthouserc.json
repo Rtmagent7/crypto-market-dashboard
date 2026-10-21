@@ -3,7 +3,13 @@
     "collect": {
       "startServerCommand": "npm run start -- -p 3200",
       "startServerReadyPattern": "Ready",
-      "url": ["http://localhost:3200/", "http://localhost:3200/coins/bitcoin"],
+      "url": [
+        "http://localhost:3200/",
+        "http://localhost:3200/coins/bitcoin",
+        "http://localhost:3200/fx",
+        "http://localhost:3200/stocks",
+        "http://localhost:3200/status"
+      ],
       "numberOfRuns": 3,
       "settings": {
         "chromeFlags": "--no-sandbox --headless=new",

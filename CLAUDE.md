@@ -34,6 +34,11 @@ correctness → quota safety → security → performance → polish.
 - Tests use `setupProviderMocks()` from `tests/msw/server.ts`; real Redis tests need
   `TEST_REDIS_URL`/`TEST_REDIS_TOKEN` (`docker compose up -d redis-http`).
 - Recapture fixtures with `npm run fixtures:capture` (calls each endpoint once; ask first).
+- `/api/*` GET handlers call `await connection()` first (else Cache Components prerenders
+  them at build and calls providers). Responses go through `app/api/_lib/envelope-response.ts`.
+- New route → add it to `app/api/_lib/contract.ts`, run `npm run openapi`; the contract has a
+  compile-time equality check against `modules/shared/domain.ts`.
+- Mappers and module tests may import provider _schemas_; only repositories import clients.
 
 ## Layer rules (Section 7)
 
@@ -104,4 +109,5 @@ Reasons go in `docs/adr/0008-scope-of-technology.md`. Never add a ⛔ technology
 ## Commands
 
 `npm run dev` · `lint` · `format:check` · `typecheck` · `test` · `test:coverage` ·
-`check:tokens` · `build` · `test:e2e` · `analyze` · `docker compose up redis`
+`check:tokens` · `openapi` / `openapi:check` · `build` · `test:e2e` · `analyze` ·
+`docker compose up -d redis redis-http`

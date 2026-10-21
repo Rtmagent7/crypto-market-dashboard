@@ -338,6 +338,43 @@ describe("callWithBudget", () => {
     });
   });
 
+  describe("weighted calls (Twelve Data: 1 credit per symbol, 8 per batch)", () => {
+    it("counts the call's cost against the period and minute caps", async () => {
+      await setup()(call(async () => 1, { budget: "twelvedata", cacheKey: "batch", cost: 8 }));
+      expect(await store.get("quota:twelvedata:2026-10-21")).toBe(8);
+      expect(await store.get("quota:twelvedata:m:2026-10-21T10:00")).toBe(8);
+    });
+
+    it("a second 8-credit batch in the same minute is refused (8 credits/minute)", async () => {
+      const callWithBudget = setup();
+      const fetcher = vi.fn(async () => 1);
+      await callWithBudget(call(fetcher, { budget: "twelvedata", cacheKey: "a", cost: 8 }));
+      const second = await callWithBudget(
+        call(fetcher, { budget: "twelvedata", cacheKey: "b", cost: 8 }),
+      );
+      expect(second).toEqual({ status: "unavailable", reason: "minute-cap" });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(await store.get("quota:twelvedata:2026-10-21")).toBe(8);
+    });
+
+    it("refuses a batch that would cross the daily cap and leaves the counter untouched", async () => {
+      for (let i = 0; i < 636; i++) await store.incr("quota:twelvedata:2026-10-21", 60);
+      const fetcher = vi.fn(async () => 1);
+      const result = await setup()(call(fetcher, { budget: "twelvedata", cacheKey: "c", cost: 8 }));
+      expect(result).toMatchObject({ reason: "budget-exhausted" });
+      expect(fetcher).not.toHaveBeenCalled();
+      expect(await store.get("quota:twelvedata:2026-10-21")).toBe(636);
+    });
+
+    it("signals a threshold even when a weighted step jumps over the exact value", async () => {
+      for (let i = 0; i < 444; i++) await store.incr("quota:twelvedata:2026-10-21", 60); // 70% of 640 = 448
+      await setup()(call(async () => 1, { budget: "twelvedata", cacheKey: "d", cost: 8 }));
+      expect(
+        logs.filter((l) => l.event === "quota_threshold").map((l) => l.fields.threshold),
+      ).toEqual([70]);
+    });
+  });
+
   describe("7. circuit breaker", () => {
     const failing = vi.fn(async () => {
       throw new ProviderHttpError(400);

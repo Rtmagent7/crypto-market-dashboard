@@ -321,6 +321,23 @@ describe("callWithBudget", () => {
     });
   });
 
+  it("logs quota_threshold exactly once when usage crosses 70% and 90% of the cap", async () => {
+    const callWithBudget = setup({ capRatio: 0.00125 }); // coingecko cap 8,000 → 10
+    for (let i = 0; i < 10; i++) {
+      await callWithBudget(call(async () => i, { cacheKey: `k${i}` }));
+    }
+    const thresholds = logs
+      .filter((l) => l.event === "quota_threshold")
+      .map((l) => l.fields.threshold);
+    expect(thresholds).toEqual([70, 90]);
+    expect(logs.find((l) => l.event === "quota_threshold")?.fields).toMatchObject({
+      provider: "coingecko",
+      used: 7,
+      cap: 10,
+      period: "2026-10",
+    });
+  });
+
   describe("7. circuit breaker", () => {
     const failing = vi.fn(async () => {
       throw new ProviderHttpError(400);

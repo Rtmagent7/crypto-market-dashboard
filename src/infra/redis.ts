@@ -36,11 +36,20 @@ export const createRedisStore = (redis: Redis): KeyValueStore => ({
 let store: KeyValueStore | undefined;
 
 /**
+ * The in-memory store must be one per process, not one per route bundle: Next.js bundles each
+ * route separately, so a module-level singleton would give /status a different "Redis" than the
+ * pages it reports on.
+ */
+const processStore = globalThis as typeof globalThis & { __tidewaterMemoryStore?: KeyValueStore };
+
+/**
  * Process-wide store. Real Redis whenever it is configured; the in-memory store only in mock
  * mode without Redis (zero-setup local dev). env.ts guarantees Redis outside mock mode.
  */
 export const getStore = (env: Env): KeyValueStore => {
   if (store) return store;
-  store = env.redisRest ? createRedisStore(new Redis(env.redisRest)) : createMemoryStore();
+  store = env.redisRest
+    ? createRedisStore(new Redis(env.redisRest))
+    : (processStore.__tidewaterMemoryStore ??= createMemoryStore());
   return store;
 };

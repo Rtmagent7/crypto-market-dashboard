@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+coverage
+playwright-report
+test-results
+.env*
+!.env.example
+Dockerfile
+docker-compose.yml

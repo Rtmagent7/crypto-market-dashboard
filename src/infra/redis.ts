@@ -41,9 +41,6 @@ let store: KeyValueStore | undefined;
  */
 export const getStore = (env: Env): KeyValueStore => {
   if (store) return store;
-  store =
-    env.REDIS_URL && env.REDIS_TOKEN
-      ? createRedisStore(new Redis({ url: env.REDIS_URL, token: env.REDIS_TOKEN }))
-      : createMemoryStore();
+  store = env.redisRest ? createRedisStore(new Redis(env.redisRest)) : createMemoryStore();
   return store;
 };

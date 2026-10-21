@@ -12,7 +12,7 @@ services:
       retries: 10
 
   # Upstash-compatible REST proxy in front of local Redis, so local and CI use the same
-  # protocol as production. REDIS_URL=http://localhost:8079  REDIS_TOKEN=local-dev-token
+  # protocol as production. KV_REST_API_URL=http://localhost:8079  KV_REST_API_TOKEN=local-dev-token
   redis-http:
     image: hiett/serverless-redis-http:latest
     environment:

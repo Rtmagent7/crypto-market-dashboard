@@ -57,7 +57,7 @@ export const CryptoAssetSchema = z
     change24hPct: z.number().nullable(),
     sparkline7d: z
       .array(z.number())
-      .openapi({ description: "7 days of hourly prices, oldest first" }),
+      .openapi({ description: "7 days of prices, one every 4 hours (42 points), oldest first" }),
   })
   .openapi("CryptoAsset");
 

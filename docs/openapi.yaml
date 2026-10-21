@@ -73,7 +73,7 @@ components:
           type: array
           items:
             type: number
-          description: 7 days of hourly prices, oldest first
+          description: 7 days of prices, one every 4 hours (42 points), oldest first
       required:
         - id
         - symbol

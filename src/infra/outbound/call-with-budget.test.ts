@@ -375,6 +375,34 @@ describe("callWithBudget", () => {
     });
   });
 
+  describe("uncached calls (Ask AI: every answer is unique)", () => {
+    it("still spends quota and logs, but never reads or writes the cache", async () => {
+      const fetcher = vi.fn(async () => "answer");
+      const callWithBudget = setup();
+      const first = await callWithBudget(
+        call(fetcher, { budget: "groq:chat", cacheKey: "chat", cache: false }),
+      );
+      const second = await callWithBudget(
+        call(fetcher, { budget: "groq:chat", cacheKey: "chat", cache: false }),
+      );
+      expect(first).toMatchObject({ status: "fresh", data: "answer", cacheHit: false });
+      expect(second).toMatchObject({ status: "fresh", cacheHit: false });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(await store.get("cache:chat")).toBeNull();
+      expect(await store.get("quota:groq:chat:2026-10-21")).toBe(2);
+      expect(outbound()).toHaveLength(2);
+    });
+
+    it("is unavailable when the budget is spent (no stale fallback exists)", async () => {
+      for (let i = 0; i < BUDGETS["groq:chat"].cap; i++)
+        await store.incr("quota:groq:chat:2026-10-21", 60);
+      const result = await setup()(
+        call(async () => "x", { budget: "groq:chat", cacheKey: "chat", cache: false }),
+      );
+      expect(result).toEqual({ status: "unavailable", reason: "budget-exhausted" });
+    });
+  });
+
   describe("7. circuit breaker", () => {
     const failing = vi.fn(async () => {
       throw new ProviderHttpError(400);

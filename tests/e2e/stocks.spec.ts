@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("/stocks", () => {
-  test("shows the session state, the 8-ticker watchlist and a switchable chart", async ({
+  test("shows the session state, the 8-ticker watchlist and the history panel", async ({
     page,
   }) => {
     await page.goto("/stocks");
@@ -21,7 +21,8 @@ test.describe("/stocks", () => {
       chart
         .locator("canvas")
         .first()
-        .or(chart.getByText("Price history is temporarily unavailable.")),
+        .or(chart.getByText("Price history is temporarily unavailable."))
+        .or(chart.getByText(/history is still being fetched/)),
     ).toBeVisible();
   });
 

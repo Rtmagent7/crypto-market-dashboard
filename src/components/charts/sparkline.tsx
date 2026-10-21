@@ -18,7 +18,16 @@ export function Sparkline({
 }): ReactNode {
   const g = sparklineGeometry(values, W, H);
   if (!g) {
-    return <span className="text-meta text-muted">—</span>;
+    // Same box as a drawn sparkline, so a series arriving later never shifts table columns.
+    return (
+      <span
+        className="inline-flex h-7 w-24 items-center justify-center text-meta text-muted"
+        style={{ width: W, height: H }}
+      >
+        <span aria-hidden>—</span>
+        <span className="sr-only">No 7-day data yet</span>
+      </span>
+    );
   }
   const { direction, changePct } = g.trend;
   const label = `7-day trend: ${direction === "flat" ? "flat" : `${direction} ${Math.abs(changePct).toFixed(1)}%`}`;

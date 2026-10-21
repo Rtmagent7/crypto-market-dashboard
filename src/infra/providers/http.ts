@@ -44,3 +44,24 @@ export const getJson = async <S extends z.ZodType>(
   if (!parsed.success) throw new ContractError(parsed.error.issues);
   return parsed.data;
 };
+
+/** POST JSON + the same error mapping and Zod validation as getJson. */
+export const postJson = async <S extends z.ZodType>(
+  url: string,
+  body: unknown,
+  schema: S,
+  { signal, headers }: GetJsonOptions,
+): Promise<z.infer<S>> => {
+  const res = await fetch(url, {
+    method: "POST",
+    signal,
+    headers: { accept: "application/json", "content-type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new ProviderHttpError(res.status, parseRetryAfter(res.headers.get("retry-after")));
+  }
+  const parsed = schema.safeParse(await res.json());
+  if (!parsed.success) throw new ContractError(parsed.error.issues);
+  return parsed.data;
+};

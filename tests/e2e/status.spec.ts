@@ -5,7 +5,7 @@ test.describe("/status", () => {
     await page.goto("/"); // let the guard fetch something worth reporting
     await page.goto("/status");
     const table = page.getByRole("table", { name: /provider status/i });
-    await expect(table.getByRole("rowheader")).toHaveCount(8);
+    await expect(table.getByRole("rowheader")).toHaveCount(9);
     for (const name of ["CoinGecko", "Twelve Data", "Frankfurter", "Groq"]) {
       await expect(table.getByRole("rowheader", { name: new RegExp(name) })).toBeVisible();
     }

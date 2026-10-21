@@ -54,3 +54,6 @@ export const RATE_LIMITS = {
   api: { limit: 120, windowSec: 60 },
   ai: { limit: 30, windowSec: 60 },
 } as const;
+
+/** Ask AI per hashed IP (spec §11): 5 questions a day; the global 100/day is the groq:chat budget. */
+export const ASK_AI_DAILY = { limit: 5, windowSec: 86_400 } as const;

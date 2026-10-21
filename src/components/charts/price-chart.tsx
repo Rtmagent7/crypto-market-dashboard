@@ -119,5 +119,7 @@ export default function PriceChart({ points, format }: PriceChartProps): ReactNo
     chart.current?.timeScale().fitContent();
   }, [points]);
 
-  return <div ref={container} aria-hidden className="h-full w-full" />;
+  // Not aria-hidden: the library adds a focusable attribution link that must stay reachable.
+  // The canvas itself carries no semantics; LazyPriceChart provides the text summary.
+  return <div ref={container} className="h-full w-full" />;
 }

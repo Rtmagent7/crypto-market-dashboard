@@ -154,6 +154,40 @@ describe("callWithBudget", () => {
       expect(slow).toHaveBeenCalledTimes(1);
     });
 
+    it("with no cache at all, a concurrent request waits for the in-flight call instead of failing", async () => {
+      let release: (v: string[]) => void = () => undefined;
+      const slow = vi.fn(() => new Promise<string[]>((resolve) => (release = resolve)));
+      // Real sleeps so the waiter can poll while the first call is in flight.
+      const callWithBudget = setup({ sleep: (ms) => new Promise((r) => setTimeout(r, ms)) });
+
+      const first = callWithBudget(call(slow));
+      await vi.waitFor(() => expect(slow).toHaveBeenCalled());
+      const second = callWithBudget(call(vi.fn(async () => ["other"])));
+      setTimeout(() => release(["new"]), 30);
+
+      await expect(second).resolves.toMatchObject({
+        status: "fresh",
+        data: ["new"],
+        cacheHit: true,
+      });
+      await expect(first).resolves.toMatchObject({ status: "fresh", data: ["new"] });
+      expect(slow).toHaveBeenCalledTimes(1);
+    });
+
+    it("stops waiting after lockWaitMs and reports locked", async () => {
+      const slow = vi.fn(() => new Promise<string[]>(() => undefined));
+      const callWithBudget = setup({
+        sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+        lockWaitMs: 50,
+      });
+      void callWithBudget(call(slow));
+      await vi.waitFor(() => expect(slow).toHaveBeenCalled());
+      await expect(callWithBudget(call(vi.fn(async () => ["x"])))).resolves.toEqual({
+        status: "unavailable",
+        reason: "locked",
+      });
+    });
+
     it("releases the lock after the call so the next expiry can refetch", async () => {
       const callWithBudget = setup();
       await callWithBudget(call(async () => ["a"]));

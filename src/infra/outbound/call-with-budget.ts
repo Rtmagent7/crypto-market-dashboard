@@ -38,7 +38,9 @@ export type SkipReason =
   | "circuit-open"
   | "cooldown"
   | "provider-error"
-  | "contract-error";
+  | "contract-error"
+  /** The provider needs a key that is not set, so it was never called. */
+  | "not-configured";
 
 export type BudgetResult<T> =
   | { status: "fresh"; data: T; fetchedAt: number; expiresAt: number; cacheHit: boolean }

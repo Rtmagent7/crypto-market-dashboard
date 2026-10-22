@@ -8,6 +8,7 @@ import type {
   TrendingCoin,
 } from "@/modules/shared/domain";
 import { toEnvelope } from "@/modules/shared/envelope";
+import { withFallback } from "@/modules/shared/fallback";
 
 import { selectRange, sparklineToPoints } from "./coin-chart";
 import {
@@ -16,6 +17,7 @@ import {
   fromCoinGeckoDetail,
   fromCoinGeckoGlobal,
   fromCoinGeckoTrending,
+  fromCoinMarketCap,
   thinSparkline,
 } from "./market.mapper";
 
@@ -31,8 +33,9 @@ export interface MarketService {
 }
 
 /**
- * Pure market logic: which provider, how to degrade, how to map. CoinMarketCap joins as the
- * fallback in a later step (spec 10.2); the envelope's `source` will then name it.
+ * Pure market logic: which provider, how to degrade, how to map. The top 50 falls back to
+ * CoinMarketCap (spec 10.2); the envelope's `source` names whoever served it. Coin detail stays
+ * on CoinGecko's (possibly stale) data: the CMC listing has no ATH or 24 h range.
  */
 export const createMarketService = ({
   repository,
@@ -47,17 +50,25 @@ export const createMarketService = ({
       : (env as DataEnvelope<T>);
 
   return {
-    getTopCoins: async () =>
-      toEnvelope(await repository.coingeckoTop50(), {
-        source: "coingecko",
-        // 42 points (one per 4 h) is denser than the 96 px sparkline can show.
-        map: (items) =>
-          items.map((i) => {
-            const asset = fromCoinGecko(i);
-            return { ...asset, sparkline7d: thinSparkline(asset.sparkline7d, SPARKLINE_POINTS) };
-          }),
-        now: now(),
-      }),
+    getTopCoins: () =>
+      withFallback(
+        {
+          provider: "coingecko",
+          load: repository.coingeckoTop50,
+          // 42 points (one per 4 h) is denser than the 96 px sparkline can show.
+          map: (items) =>
+            items.map((i) => {
+              const asset = fromCoinGecko(i);
+              return { ...asset, sparkline7d: thinSparkline(asset.sparkline7d, SPARKLINE_POINTS) };
+            }),
+        },
+        {
+          provider: "coinmarketcap",
+          load: repository.coinmarketcapTop50,
+          map: (listings) => listings.data.map(fromCoinMarketCap),
+        },
+        now(),
+      ),
     getGlobal: async () =>
       toEnvelope(await repository.coingeckoGlobal(), {
         source: "coingecko",

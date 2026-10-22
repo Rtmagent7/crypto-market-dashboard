@@ -24,7 +24,7 @@ describe("contentSecurityPolicy (spec §11)", () => {
 
   it("limits images to self and the CoinGecko image host", () => {
     expect(csp("production")["img-src"]).toBe(
-      "'self' data: blob: https://coin-images.coingecko.com https://assets.coingecko.com",
+      "'self' data: blob: https://coin-images.coingecko.com https://assets.coingecko.com https://s2.coinmarketcap.com",
     );
   });
 

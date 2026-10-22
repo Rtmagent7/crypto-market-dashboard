@@ -4,7 +4,12 @@
  * are allowed while every external origin is not.
  */
 
-const IMAGE_HOSTS = ["https://coin-images.coingecko.com", "https://assets.coingecko.com"];
+const IMAGE_HOSTS = [
+  "https://coin-images.coingecko.com",
+  "https://assets.coingecko.com",
+  // Coin icons while the CoinMarketCap fallback serves the table.
+  "https://s2.coinmarketcap.com",
+];
 
 export const contentSecurityPolicy = (vercelEnv: string | undefined): string => {
   const preview = vercelEnv === "preview";

@@ -46,7 +46,10 @@ export const computeStatuses = (
 
     let state: ProviderStatus["state"] = "operational";
     let reason: string | null = null;
-    if (!r.configured) {
+    if ("wired" in p && !p.wired) {
+      state = "standby";
+      reason = "Not connected yet.";
+    } else if (!r.configured) {
       state = "standby";
       reason =
         p.role === "backup"

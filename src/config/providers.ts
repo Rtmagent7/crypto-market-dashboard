@@ -84,6 +84,8 @@ export const STATUS_PROVIDERS = [
     ttl: CACHE_POLICY["groq:summary"].ttl,
     keyEnv: "CF_AI_TOKEN",
     backup: null,
+    /** No client yet: the token cannot run Workers AI models (401), so no real fixture exists. */
+    wired: false,
   },
   {
     id: "worldbank",

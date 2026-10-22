@@ -6,9 +6,10 @@ import type {
   StockSeriesRange,
 } from "@/modules/shared/domain";
 import { toEnvelope } from "@/modules/shared/envelope";
+import { withFallback } from "@/modules/shared/fallback";
 
 import { nextMarketOpen } from "./schedule";
-import { fromTwelveDataQuotes, fromTwelveDataSeries } from "./stocks.mapper";
+import { fromFinnhub, fromTwelveDataQuotes, fromTwelveDataSeries } from "./stocks.mapper";
 import { getStocksRepository, type StocksRepository } from "./stocks.repository";
 
 export interface StocksService {
@@ -19,8 +20,8 @@ export interface StocksService {
 }
 
 /**
- * Twelve Data is the only core stock provider (ADR 0003). Finnhub joins as the backup once a key
- * and a real fixture exist (rule: never invent response shapes).
+ * Twelve Data is the only core stock provider (ADR 0003). Finnhub backs up quotes only (spec
+ * 10.2: stock charts have no backup); the envelope's `source` names whoever served.
  */
 export const createStocksService = ({
   repository,
@@ -30,12 +31,20 @@ export const createStocksService = ({
   now?: () => number;
 }): StocksService => ({
   nextOpen: () => nextMarketOpen(now()),
-  getQuotes: async () =>
-    toEnvelope(await repository.quotes(), {
-      source: "twelvedata",
-      map: (batch) => fromTwelveDataQuotes(batch, TICKERS),
-      now: now(),
-    }),
+  getQuotes: () =>
+    withFallback(
+      {
+        provider: "twelvedata",
+        load: repository.quotes,
+        map: (batch) => fromTwelveDataQuotes(batch, TICKERS),
+      },
+      {
+        provider: "finnhub",
+        load: repository.finnhubQuotes,
+        map: (batch) => fromFinnhub(batch, TICKERS),
+      },
+      now(),
+    ),
   getSeries: async (range) =>
     toEnvelope(await (range === "1d" ? repository.hourly() : repository.daily()), {
       source: "twelvedata",

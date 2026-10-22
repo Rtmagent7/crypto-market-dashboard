@@ -1,3 +1,5 @@
+import { TICKER_NAMES, type Ticker } from "@/config/tickers";
+import type { FhBatch } from "@/infra/providers/finnhub.schema";
 import type {
   TdQuote,
   TdQuoteBatch,
@@ -25,6 +27,24 @@ export const fromTwelveDataQuotes = (batch: TdQuoteBatch, order: readonly string
         changePct: q.percent_change,
         isMarketOpen: q.is_market_open,
         asOf: new Date((q.last_quote_at ?? q.timestamp) * 1000).toISOString(),
+      },
+    ];
+  });
+
+/** Finnhub backup → StockQuote[] in watchlist order; unknown (t = 0) or missing symbols are left out. */
+export const fromFinnhub = (batch: FhBatch, order: readonly Ticker[]): StockQuote[] =>
+  order.flatMap((symbol) => {
+    const q = batch.quotes[symbol];
+    if (!q || q.t === 0) return [];
+    return [
+      {
+        symbol,
+        name: TICKER_NAMES[symbol],
+        price: q.c,
+        change: q.d ?? 0,
+        changePct: q.dp ?? 0,
+        isMarketOpen: batch.status.isOpen,
+        asOf: new Date(q.t * 1000).toISOString(),
       },
     ];
   });

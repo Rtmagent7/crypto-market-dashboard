@@ -6,6 +6,8 @@ import { TICKERS } from "@/config/tickers";
 import { getEnv } from "@/infra/env";
 import type { BudgetResult, CallWithBudget } from "@/infra/outbound/call-with-budget";
 import { getCallWithBudget } from "@/infra/outbound/gate";
+import { createFinnhubClient, type FinnhubClient } from "@/infra/providers/finnhub.client";
+import type { FhBatch } from "@/infra/providers/finnhub.schema";
 import { createTwelveDataClient, type TwelveDataClient } from "@/infra/providers/twelvedata.client";
 import type { TdQuoteBatch, TdSeriesBatch } from "@/infra/providers/twelvedata.schema";
 
@@ -17,6 +19,8 @@ export interface StocksRepository {
   quotes(): Promise<BudgetResult<TdQuoteBatch>>;
   hourly(): Promise<BudgetResult<TdSeriesBatch>>;
   daily(): Promise<BudgetResult<TdSeriesBatch>>;
+  /** Backup quotes (8 symbols + market status = 9 calls). Never called without a key. */
+  finnhubQuotes(): Promise<BudgetResult<FhBatch>>;
 }
 
 const isOpen = (batch: TdQuoteBatch): boolean =>
@@ -61,10 +65,13 @@ export const dailyPolicy = (now: number): CachePolicy => ({
 export const createStocksRepository = ({
   callWithBudget,
   twelvedata,
+  finnhub = null,
   now = Date.now,
 }: {
   callWithBudget: CallWithBudget;
   twelvedata: TwelveDataClient;
+  /** null (the default) when FINNHUB_API_KEY is not set. */
+  finnhub?: FinnhubClient | null;
   now?: () => number;
 }): StocksRepository => {
   // Remember the last known session state so the hourly series can pick its TTL too.
@@ -100,13 +107,38 @@ export const createStocksRepository = ({
         policy: () => dailyPolicy(now()),
         fetcher: (signal) => twelvedata.series(TICKERS, "1day", 252, signal),
       }),
+    finnhubQuotes: async () =>
+      finnhub
+        ? callWithBudget<FhBatch>({
+            budget: "finnhub",
+            endpoint: "/quote ×8 + /stock/market-status",
+            cost: TICKERS.length + 1,
+            // Same key /status reads for this provider's data age (config/providers.ts).
+            cacheKey: "finnhub:quote",
+            policy: (batch) =>
+              CACHE_POLICY[batch.status.isOpen ? "finnhub:quote-open" : "finnhub:quote-closed"],
+            fetcher: async (signal) => {
+              const [status, ...quotes] = await Promise.all([
+                finnhub.marketStatus(signal),
+                ...TICKERS.map((t) => finnhub.quote(t, signal)),
+              ]);
+              return { status, quotes: Object.fromEntries(TICKERS.map((t, i) => [t, quotes[i]])) };
+            },
+          })
+        : { status: "unavailable", reason: "not-configured" },
   };
 };
 
 let repository: StocksRepository | undefined;
 
-export const getStocksRepository = (): StocksRepository =>
-  (repository ??= createStocksRepository({
+export const getStocksRepository = (): StocksRepository => {
+  if (repository) return repository;
+  const env = getEnv();
+  // In mock mode MSW answers, so the backup path is exercised without a real key.
+  const finnhubKey = env.FINNHUB_API_KEY ?? (env.MOCK_PROVIDERS === "1" ? "mock" : undefined);
+  return (repository = createStocksRepository({
     callWithBudget: getCallWithBudget(),
-    twelvedata: createTwelveDataClient({ apiKey: getEnv().TWELVEDATA_API_KEY }),
+    twelvedata: createTwelveDataClient({ apiKey: env.TWELVEDATA_API_KEY }),
+    finnhub: finnhubKey ? createFinnhubClient({ apiKey: finnhubKey }) : null,
   }));
+};

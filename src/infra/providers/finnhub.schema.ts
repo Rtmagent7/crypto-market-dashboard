@@ -25,3 +25,9 @@ export const FhMarketStatus = z.object({
 
 export type FhQuote = z.infer<typeof FhQuote>;
 export type FhMarketStatus = z.infer<typeof FhMarketStatus>;
+
+/** What the repository caches: one market status plus one quote per watchlist symbol. */
+export interface FhBatch {
+  status: FhMarketStatus;
+  quotes: Partial<Record<string, FhQuote>>;
+}

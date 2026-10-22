@@ -10,6 +10,8 @@ import cgMarkets from "../fixtures/coingecko-markets.json";
 import cgTrending from "../fixtures/coingecko-trending.json";
 import cmcListings from "../fixtures/coinmarketcap-listings.json";
 import erLatest from "../fixtures/exchangerate-latest-open.json";
+import fhStatus from "../fixtures/finnhub-market-status.json";
+import fhQuote from "../fixtures/finnhub-quote.json";
 import ffLatest from "../fixtures/frankfurter-latest.json";
 import ffRange from "../fixtures/frankfurter-range-1y.json";
 import tdQuote from "../fixtures/twelvedata-quote.json";
@@ -58,6 +60,14 @@ export const createProviderHandlers = (hits: HitCounter = new Map()): HttpHandle
     http.get(
       "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
       () => (hit("coinmarketcap:/listings/latest"), HttpResponse.json(cmcListings)),
+    ),
+    http.get(
+      "https://finnhub.io/api/v1/quote",
+      () => (hit("finnhub:/quote"), HttpResponse.json(fhQuote)),
+    ),
+    http.get(
+      "https://finnhub.io/api/v1/stock/market-status",
+      () => (hit("finnhub:/stock/market-status"), HttpResponse.json(fhStatus)),
     ),
     http.get(`${FF}/latest`, () => (hit("frankfurter:/latest"), HttpResponse.json(ffLatest))),
     http.get(`${FF}/:range`, () => (hit("frankfurter:/range"), HttpResponse.json(ffRange))),

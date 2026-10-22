@@ -1,6 +1,7 @@
 /**
  * Captures ONE real Groq summary for the MSW mock (tests/fixtures/groq-summary.json), using the
  * production prompt on fixture data. Run once: npm run fixtures:ai (reads .env.local).
+ * `npm run fixtures:ai -- workers-ai` captures the Cloudflare Workers AI backup the same way.
  */
 import { writeFile } from "node:fs/promises";
 
@@ -16,8 +17,9 @@ import markets from "../tests/fixtures/coingecko-markets.json" with { type: "jso
 import ffLatest from "../tests/fixtures/frankfurter-latest.json" with { type: "json" };
 import ffRange from "../tests/fixtures/frankfurter-range-1y.json" with { type: "json" };
 
+const mode = process.argv[2] ?? "summary";
 const key = process.env.GROQ_API_KEY;
-if (!key) throw new Error("GROQ_API_KEY missing in .env.local");
+if (!key && mode !== "workers-ai") throw new Error("GROQ_API_KEY missing in .env.local");
 
 const rates = fromFrankfurter(FfLatest.parse(ffLatest));
 const history = fromFrankfurterRange(FfRange.parse(ffRange), "IDR");
@@ -27,7 +29,27 @@ const context = buildMarketContext({
   usdIdr: { rate: rates.rates.IDR!, date: rates.date, change1dPct: 0.32, history },
 });
 
-const mode = process.argv[2] ?? "summary";
+if (mode === "workers-ai") {
+  const { CF_ACCOUNT_ID: account, CF_AI_TOKEN: token } = process.env;
+  if (!account || !token) throw new Error("CF_ACCOUNT_ID / CF_AI_TOKEN missing in .env.local");
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/${AI.workersAiModel}`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: buildMessages(context),
+        max_tokens: AI.maxTokens,
+        temperature: 0.2,
+      }),
+    },
+  );
+  const body = await res.json();
+  await writeFile("tests/fixtures/workers-ai-summary.json", `${JSON.stringify(body, null, 2)}\n`);
+  console.log(res.status, JSON.stringify(body.result?.usage));
+  console.log(body.result?.choices?.[0]?.message?.content ?? JSON.stringify(body).slice(0, 400));
+  process.exit(0);
+}
 
 if (mode === "chat") {
   // Ask AI: one real *streamed* answer (SSE) from the chat model, saved byte for byte.

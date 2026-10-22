@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-22T00:56:34.847Z",
+  "url": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=50&convert=USD",
+  "status": 200,
+  "keyless": null,
+  "headers": {
+    "access-control-max-age": "600",
+    "date": "Thu, 22 Oct 2026 00:56:34 GMT",
+    "x-cache": "Miss from cloudfront"
+  }
+}

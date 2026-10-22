@@ -1,0 +1,13 @@
+{
+  "capturedAt": "2026-10-22T01:13:09.686Z",
+  "url": "https://finnhub.io/api/v1/quote?symbol=ZZZZNOTREAL&token=<redacted>",
+  "status": 200,
+  "keyless": null,
+  "headers": {
+    "cf-cache-status": "DYNAMIC",
+    "date": "Thu, 22 Oct 2026 01:13:09 GMT",
+    "x-ratelimit-limit": "60",
+    "x-ratelimit-remaining": "58",
+    "x-ratelimit-reset": "1792631647"
+  }
+}

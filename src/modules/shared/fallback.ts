@@ -11,6 +11,9 @@ export interface Source<Raw, T> {
  * Degradation order (spec §5, §10.2): fresh primary → fresh backup → stale primary →
  * stale backup → unavailable. The backup is only called when the primary is not fresh,
  * and the envelope's `source` always names whoever actually served the data.
+ *
+ * Exception: stale because another request is refreshing the primary right now (single-flight
+ * lock) is not a failure, so the backup is not called and does not spend quota.
  */
 export const withFallback = async <P, B, T>(
   primary: Source<P, T>,
@@ -21,6 +24,7 @@ export const withFallback = async <P, B, T>(
   const viaPrimary = (): DataEnvelope<T> =>
     toEnvelope(first, { source: primary.provider, map: primary.map, now });
   if (first.status === "fresh") return viaPrimary();
+  if (first.status === "stale" && first.reason === "locked") return viaPrimary();
 
   const second = await backup.load();
   const viaBackup = (): DataEnvelope<T> =>

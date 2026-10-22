@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { GroqCompletion } from "@/infra/providers/groq.schema";
+import { WaiCompletion } from "@/infra/providers/workers-ai.schema";
 
 import summary from "../../../tests/fixtures/groq-summary.json";
+import waiSummary from "../../../tests/fixtures/workers-ai-summary.json";
 
-import { cleanBrief, fromGroqCompletion } from "./ai.mapper";
+import { cleanBrief, fromGroqCompletion, fromWorkersAi } from "./ai.mapper";
 
 describe("cleanBrief — plain text, bounded", () => {
   it("strips markdown and collapses whitespace", () => {
@@ -50,5 +52,28 @@ describe("fromGroqCompletion", () => {
       choices: [{ message: { role: "assistant", content: "" }, finish_reason: "length" }],
     });
     expect(fromGroqCompletion(empty, "v")).toBeNull();
+  });
+});
+
+describe("fromWorkersAi", () => {
+  it("maps the real Workers AI completion to the same MarketBrief shape", () => {
+    const brief = fromWorkersAi(WaiCompletion.parse(waiSummary), "v", 120)!;
+    expect(brief.text).toMatch(/Bitcoin/);
+    expect(brief.model).toMatch(/^@cf\/meta\/llama-3\.3-70b/);
+    expect(brief.promptVersion).toBe("v");
+  });
+
+  it("an empty completion is not a brief", () => {
+    const c = WaiCompletion.parse(waiSummary);
+    const empty = {
+      ...c,
+      result: {
+        ...c.result,
+        choices: [
+          { ...c.result.choices[0]!, message: { role: "assistant" as const, content: "  " } },
+        ],
+      },
+    };
+    expect(fromWorkersAi(empty, "v")).toBeNull();
   });
 });

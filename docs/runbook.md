@@ -13,6 +13,8 @@ How to operate Tidewater after launch (spec Phase 7). Production:
 
 ## Alerts and what to do
 
+Alerts go to `ALERT_WEBHOOK_URL` (Discord or Telegram), set in Vercel and in GitHub secrets. `npm run alert:test` sends one test message through the same code path; run it after changing the webhook.
+
 | Alert                                    | Meaning                                                      | Action                                                                                                                                                                                |
 | :--------------------------------------- | :----------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `<provider> used 70% of its quota`       | On track to hit the cap                                      | Raise that endpoint's TTL in `src/config/cache-policy.ts`, record why in a new ADR, deploy.                                                                                           |

@@ -21,6 +21,7 @@
     "openapi": "tsx scripts/generate-openapi.mts",
     "openapi:check": "tsx scripts/generate-openapi.mts --check",
     "fixtures:ai": "tsx --env-file=.env.local scripts/capture-ai-fixture.mts",
+    "alert:test": "tsx --env-file=.env.local scripts/send-test-alert.mts",
     "test:load": "scripts/load-test.sh",
     "test:visual": "playwright test --project=visual",
     "test:visual:update": "playwright test --project=visual --update-snapshots"

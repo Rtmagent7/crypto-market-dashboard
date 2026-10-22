@@ -18,6 +18,8 @@ export const CACHE_POLICY = {
   "coingecko:trending": { ttl: HOUR, staleFor: 7 * DAY },
   "coingecko:chart-30d": { ttl: 6 * HOUR, staleFor: 7 * DAY },
   "coingecko:chart-1y": { ttl: DAY, staleFor: 7 * DAY },
+  // Backup for coingecko:markets: only called while CoinGecko has no fresh data.
+  "coinmarketcap:listings": { ttl: 15 * MINUTE, staleFor: 7 * DAY },
   "twelvedata:quote-open": { ttl: 20 * MINUTE, staleFor: 7 * DAY },
   "twelvedata:quote-closed": { ttl: 6 * HOUR, staleFor: 7 * DAY },
   "twelvedata:series-1h": { ttl: HOUR, staleFor: 7 * DAY },

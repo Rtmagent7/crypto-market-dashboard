@@ -22,6 +22,8 @@ const fresh = <T>(data: T): BudgetResult<T> => ({
   cacheHit: false,
 });
 
+const noBackup = { status: "unavailable", reason: "not-configured" } as const;
+
 const fakeRepository = (overrides: Partial<MarketRepository> = {}): MarketRepository => ({
   coingeckoTop50: vi.fn(async () => fresh(CgMarkets.parse(markets))),
   coingeckoGlobal: vi.fn(async () => fresh(CgGlobal.parse(global))),
@@ -44,7 +46,7 @@ describe("market service", () => {
     expect(env.nextRefreshAt).toBe(new Date(NOW + 900_000).toISOString());
   });
 
-  it("passes stale data through with its stale status", async () => {
+  it("passes stale data through with its stale status when no backup is configured", async () => {
     const repository = fakeRepository({
       coingeckoTop50: vi.fn(async () => ({
         status: "stale" as const,
@@ -53,18 +55,20 @@ describe("market service", () => {
         expiresAt: NOW - 6_300_000,
         reason: "provider-error" as const,
       })),
+      coinmarketcapTop50: vi.fn(async () => noBackup),
     });
     const env = await createMarketService({ repository, now: () => NOW }).getTopCoins();
     expect(env.status).toBe("stale");
     expect(env.data).toHaveLength(50);
   });
 
-  it("reports unavailable with null data when there is no cache at all", async () => {
+  it("reports unavailable with null data when there is no cache and no backup", async () => {
     const repository = fakeRepository({
       coingeckoTop50: vi.fn(async () => ({
         status: "unavailable" as const,
         reason: "budget-exhausted" as const,
       })),
+      coinmarketcapTop50: vi.fn(async () => noBackup),
     });
     const env = await createMarketService({ repository, now: () => NOW }).getTopCoins();
     expect(env).toMatchObject({ status: "unavailable", data: null });

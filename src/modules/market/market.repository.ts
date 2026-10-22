@@ -16,6 +16,11 @@ import type {
   CgMarketItem,
   CgTrending,
 } from "@/infra/providers/coingecko.schema";
+import {
+  createCoinMarketCapClient,
+  type CoinMarketCapClient,
+} from "@/infra/providers/coinmarketcap.client";
+import type { CmcListings } from "@/infra/providers/coinmarketcap.schema";
 
 export type { BudgetResult };
 
@@ -24,6 +29,8 @@ export interface MarketRepository {
   coingeckoTop50(): Promise<BudgetResult<CgMarketItem[]>>;
   coingeckoGlobal(): Promise<BudgetResult<CgGlobal>>;
   coingeckoTrending(): Promise<BudgetResult<CgTrending>>;
+  /** Backup top 50. Never called without a key (`not-configured`). */
+  coinmarketcapTop50(): Promise<BudgetResult<CmcListings>>;
   /** One cache key per coin and window: 10 coins × (30d every 6 h + 1y daily) = 50 calls/day. */
   coingeckoChart(id: WhitelistedCoin, days: ChartDays): Promise<BudgetResult<CgMarketChart>>;
 }
@@ -31,9 +38,12 @@ export interface MarketRepository {
 export const createMarketRepository = ({
   callWithBudget,
   coingecko,
+  coinmarketcap = null,
 }: {
   callWithBudget: CallWithBudget;
   coingecko: CoinGeckoClient;
+  /** null (the default) when CMC_API_KEY is not set. */
+  coinmarketcap?: CoinMarketCapClient | null;
 }): MarketRepository => ({
   coingeckoTop50: () =>
     callWithBudget({
@@ -59,6 +69,17 @@ export const createMarketRepository = ({
       policy: CACHE_POLICY["coingecko:trending"],
       fetcher: (signal) => coingecko.trending(signal),
     }),
+  coinmarketcapTop50: async () =>
+    coinmarketcap
+      ? callWithBudget({
+          budget: "coinmarketcap",
+          endpoint: "/v1/cryptocurrency/listings/latest",
+          // Same key /status reads for this provider's data age (config/providers.ts).
+          cacheKey: "coinmarketcap:listings",
+          policy: CACHE_POLICY["coinmarketcap:listings"],
+          fetcher: (signal) => coinmarketcap.listings(signal),
+        })
+      : { status: "unavailable", reason: "not-configured" },
   coingeckoChart: (id, days) =>
     callWithBudget({
       budget: "coingecko",
@@ -71,8 +92,14 @@ export const createMarketRepository = ({
 
 let repository: MarketRepository | undefined;
 
-export const getMarketRepository = (): MarketRepository =>
-  (repository ??= createMarketRepository({
+export const getMarketRepository = (): MarketRepository => {
+  if (repository) return repository;
+  const env = getEnv();
+  // In mock mode MSW answers, so the backup path is exercised without a real key.
+  const cmcKey = env.CMC_API_KEY ?? (env.MOCK_PROVIDERS === "1" ? "mock" : undefined);
+  return (repository = createMarketRepository({
     callWithBudget: getCallWithBudget(),
-    coingecko: createCoinGeckoClient({ apiKey: getEnv().COINGECKO_API_KEY }),
+    coingecko: createCoinGeckoClient({ apiKey: env.COINGECKO_API_KEY }),
+    coinmarketcap: cmcKey ? createCoinMarketCapClient({ apiKey: cmcKey }) : null,
   }));
+};

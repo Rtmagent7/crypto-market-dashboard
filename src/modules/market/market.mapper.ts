@@ -1,9 +1,11 @@
+import { COINMARKETCAP_SLUG_TO_COINGECKO_ID } from "@/config/coins";
 import type {
   CgGlobal,
   CgMarketChart,
   CgMarketItem,
   CgTrending,
 } from "@/infra/providers/coingecko.schema";
+import type { CmcListing } from "@/infra/providers/coinmarketcap.schema";
 import type {
   CoinDetail,
   CryptoAsset,
@@ -24,6 +26,19 @@ export const fromCoinGecko = (i: CgMarketItem): CryptoAsset => ({
   rank: i.market_cap_rank ?? 0,
   change24hPct: i.price_change_percentage_24h,
   sparkline7d: i.sparkline_in_7d?.price ?? [],
+});
+
+/** CoinMarketCap backup → the same CryptoAsset. The listing has no sparkline, so the cell shows "—". */
+export const fromCoinMarketCap = (i: CmcListing): CryptoAsset => ({
+  id: COINMARKETCAP_SLUG_TO_COINGECKO_ID[i.slug] ?? i.slug,
+  symbol: i.symbol.toUpperCase(),
+  name: i.name,
+  imageUrl: `https://s2.coinmarketcap.com/static/img/coins/64x64/${i.id}.png`,
+  priceUsd: i.quote.USD.price,
+  marketCapUsd: i.quote.USD.market_cap,
+  rank: i.cmc_rank ?? 0,
+  change24hPct: i.quote.USD.percent_change_24h,
+  sparkline7d: [],
 });
 
 /**

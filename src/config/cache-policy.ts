@@ -24,6 +24,10 @@ export const CACHE_POLICY = {
   "twelvedata:quote-closed": { ttl: 6 * HOUR, staleFor: 7 * DAY },
   "twelvedata:series-1h": { ttl: HOUR, staleFor: 7 * DAY },
   "twelvedata:series-1day": { ttl: DAY, staleFor: 7 * DAY },
+  // Backup for quotes only, called only while Twelve Data has no fresh data. Open vs closed comes
+  // from Finnhub's /stock/market-status. One refresh = 8 quotes + 1 status = 9 calls.
+  "finnhub:quote-open": { ttl: 20 * MINUTE, staleFor: 7 * DAY },
+  "finnhub:quote-closed": { ttl: 6 * HOUR, staleFor: 7 * DAY },
   "frankfurter:latest": { ttl: 6 * HOUR, staleFor: 7 * DAY },
   "frankfurter:range-1y": { ttl: DAY, staleFor: 7 * DAY },
   "exchangerate:latest": { ttl: DAY, staleFor: 7 * DAY },

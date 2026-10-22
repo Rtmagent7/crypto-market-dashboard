@@ -1,0 +1,48 @@
+{
+  "result": {
+    "id": "chatcmpl-24eb33e7-57d3-4f16-9056-d9fc19fe2b3e",
+    "object": "chat.completion",
+    "created": 1792634985,
+    "model": "@cf/meta/llama-3.3-70b-instruct-sd",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The global crypto market cap is 2.84 trillion USD with a 1.36 percent decrease in the last 24 hours. Bitcoin's dominance is 59.6 percent. The biggest gainers are ENA, ZEC, and NEAR with 24 hour percentage changes of 16.51, 12.73, and 10.71 respectively. The USD to IDR rate is 18043 with a 0.32 percent increase in the last day.",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": null
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": null,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "usage": {
+      "prompt_tokens": 657,
+      "completion_tokens": 98,
+      "total_tokens": 755,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "neurons": 37.591583251953125
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null,
+    "response": "The global crypto market cap is 2.84 trillion USD with a 1.36 percent decrease in the last 24 hours. Bitcoin's dominance is 59.6 percent. The biggest gainers are ENA, ZEC, and NEAR with 24 hour percentage changes of 16.51, 12.73, and 10.71 respectively. The USD to IDR rate is 18043 with a 0.32 percent increase in the last day.",
+    "tool_calls": []
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

@@ -136,10 +136,17 @@ const keyed = (): Target[] => {
     });
   }
   if (env.FINNHUB_API_KEY) {
-    targets.push({
-      name: "finnhub-quote",
-      url: `https://finnhub.io/api/v1/quote?symbol=AAPL&token=${env.FINNHUB_API_KEY}`,
-    });
+    const fh = "https://finnhub.io/api/v1";
+    const token = env.FINNHUB_API_KEY;
+    targets.push(
+      { name: "finnhub-quote", url: `${fh}/quote?symbol=AAPL&token=${token}` },
+      // Unknown symbols still answer 200, with zeros and nulls.
+      { name: "finnhub-quote-unknown", url: `${fh}/quote?symbol=ZZZZNOTREAL&token=${token}` },
+      {
+        name: "finnhub-market-status",
+        url: `${fh}/stock/market-status?exchange=US&token=${token}`,
+      },
+    );
   }
   if (env.GROQ_API_KEY) {
     const auth = { Authorization: `Bearer ${env.GROQ_API_KEY}` };

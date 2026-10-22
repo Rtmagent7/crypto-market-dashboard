@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { CgGlobal, CgMarketChart, CgMarkets, CgTrending } from "@/infra/providers/coingecko.schema";
+import { CmcListings } from "@/infra/providers/coinmarketcap.schema";
 
 import global from "../../../tests/fixtures/coingecko-global.json";
 import chart1y from "../../../tests/fixtures/coingecko-market-chart-1y.json";
 import chart30d from "../../../tests/fixtures/coingecko-market-chart-30d.json";
 import markets from "../../../tests/fixtures/coingecko-markets.json";
+import cmcListings from "../../../tests/fixtures/coinmarketcap-listings.json";
 import trending from "../../../tests/fixtures/coingecko-trending.json";
 
 import type { BudgetResult, MarketRepository } from "./market.repository";
@@ -24,6 +26,7 @@ const fakeRepository = (overrides: Partial<MarketRepository> = {}): MarketReposi
   coingeckoTop50: vi.fn(async () => fresh(CgMarkets.parse(markets))),
   coingeckoGlobal: vi.fn(async () => fresh(CgGlobal.parse(global))),
   coingeckoTrending: vi.fn(async () => fresh(CgTrending.parse(trending))),
+  coinmarketcapTop50: vi.fn(async () => fresh(CmcListings.parse(cmcListings))),
   coingeckoChart: vi.fn(async (_id: string, days: 30 | 365) =>
     fresh(CgMarketChart.parse(days === 30 ? chart30d : chart1y)),
   ),
@@ -107,5 +110,44 @@ describe("market service — coin detail", () => {
       ["bitcoin", 30],
       ["bitcoin", 365],
     ]);
+  });
+});
+
+describe("market service — CoinMarketCap fallback (spec 10.2)", () => {
+  const unavailable = { status: "unavailable", reason: "provider-error" } as const;
+
+  it("never calls CoinMarketCap while CoinGecko is fresh", async () => {
+    const repository = fakeRepository();
+    await createMarketService({ repository, now: () => NOW }).getTopCoins();
+    expect(repository.coinmarketcapTop50).not.toHaveBeenCalled();
+  });
+
+  it("serves CoinMarketCap, and names it, when CoinGecko has nothing", async () => {
+    const env = await createMarketService({
+      repository: fakeRepository({ coingeckoTop50: vi.fn(async () => unavailable) }),
+      now: () => NOW,
+    }).getTopCoins();
+    expect(env).toMatchObject({ status: "fresh", source: "coinmarketcap" });
+    expect(env.data).toHaveLength(50);
+    expect(env.data?.[0]?.id).toBe("bitcoin");
+  });
+
+  it("is unavailable only when both are", async () => {
+    const env = await createMarketService({
+      repository: fakeRepository({
+        coingeckoTop50: vi.fn(async () => unavailable),
+        coinmarketcapTop50: vi.fn(
+          async () => ({ status: "unavailable", reason: "not-configured" }) as const,
+        ),
+      }),
+      now: () => NOW,
+    }).getTopCoins();
+    expect(env).toMatchObject({ status: "unavailable", data: null, source: "coingecko" });
+  });
+
+  it("coin detail stays on CoinGecko data (ATH and 24 h range are not in the listing)", async () => {
+    const repository = fakeRepository();
+    await createMarketService({ repository, now: () => NOW }).getCoin("bitcoin");
+    expect(repository.coinmarketcapTop50).not.toHaveBeenCalled();
   });
 });

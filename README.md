@@ -53,15 +53,16 @@ cron only ever talk to this app; dependency direction is enforced by ESLint.
 `calls/day = Σ (86,400 ÷ TTL) × cache keys`. Caps are 80% of each free limit (`budgets.ts`); the
 quota-compliance tests simulate 24 h of traffic and assert these numbers.
 
-| Provider              | Data                                               | TTL              |  Calls / day | Free limit                      |            Peak use |
-| :-------------------- | :------------------------------------------------- | :--------------- | -----------: | :------------------------------ | ------------------: |
-| CoinGecko             | top 50 + sparklines; global; trending              | 15 min; 1 h; 1 h | 96 + 24 + 24 | 10,000 / month                  |                ~60% |
-| CoinGecko             | 10 coins × (30 d, 1 y) charts; 7 d from sparklines | 6 h; 24 h        |         ≤ 50 | (same)                          |              (same) |
-| Twelve Data           | 8-ticker quotes at :00/:20/:40 while open          | slot-aligned     | ≤ 24 batches | 800 credits / day, 8 / min      | ≤ 256 credits (32%) |
-| Twelve Data           | hourly bars at :05; daily bars after close         | slot-aligned     |  ≤ 8 batches | (same)                          |              (same) |
-| Frankfurter           | latest; 1-year range                               | 6 h; 24 h        |        4 + 1 | no quota                        |                   — |
-| Groq (`gpt-oss-120b`) | AI brief, ~973 tokens                              | 3 h              |          ≤ 8 | 1,000 req · 200 K tokens / day  |          ~4% tokens |
-| World Bank            | 5 Indonesia indicators, one request                | 7 days           |        ≤ 1/7 | no published limit (cap 50/day) |                   — |
+| Provider               | Data                                               | TTL              |           Calls / day | Free limit                      |            Peak use |
+| :--------------------- | :------------------------------------------------- | :--------------- | --------------------: | :------------------------------ | ------------------: |
+| CoinGecko              | top 50 + sparklines; global; trending              | 15 min; 1 h; 1 h |          96 + 24 + 24 | 10,000 / month                  |                ~60% |
+| CoinGecko              | 10 coins × (30 d, 1 y) charts; 7 d from sparklines | 6 h; 24 h        |                  ≤ 50 | (same)                          |              (same) |
+| Twelve Data            | 8-ticker quotes at :00/:20/:40 while open          | slot-aligned     |          ≤ 24 batches | 800 credits / day, 8 / min      | ≤ 256 credits (32%) |
+| Twelve Data            | hourly bars at :05; daily bars after close         | slot-aligned     |           ≤ 8 batches | (same)                          |              (same) |
+| Frankfurter            | latest; 1-year range                               | 6 h; 24 h        |                 4 + 1 | no quota                        |                   — |
+| Groq (`gpt-oss-120b`)  | AI brief, ~973 tokens                              | 3 h              |                   ≤ 8 | 1,000 req · 200 K tokens / day  |          ~4% tokens |
+| CoinMarketCap (backup) | top 50, only while CoinGecko has no fresh data     | 15 min           | 0 (≤ 96 in an outage) | 10,000 credits / month          |                   — |
+| World Bank             | 5 Indonesia indicators, one request                | 7 days           |                 ≤ 1/7 | no published limit (cap 50/day) |                   — |
 
 Twelve Data batches cost 8 credits (one per symbol) and are counted as such; the guard refuses a
 second batch in the same minute.

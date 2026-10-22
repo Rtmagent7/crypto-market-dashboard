@@ -39,6 +39,8 @@ const fx = {
   ),
 } as unknown as FxService;
 
+const noBackup = { status: "unavailable", reason: "not-configured" } as const;
+
 const BRIEF: MarketBrief = {
   text: "Bitcoin led.",
   model: "openai/gpt-oss-120b",
@@ -50,6 +52,7 @@ describe("ai service", () => {
     const m = market();
     const repository: AiRepository = {
       ask: vi.fn(),
+      workersAiSummary: vi.fn(async () => noBackup),
       summary: vi.fn(async (): Promise<BudgetResult<MarketBrief>> => ({
         status: "fresh",
         data: BRIEF,
@@ -67,6 +70,7 @@ describe("ai service", () => {
     let sent = "";
     const repository: AiRepository = {
       ask: vi.fn(),
+      workersAiSummary: vi.fn(async () => noBackup),
       summary: vi.fn(async (messages) => {
         sent = JSON.stringify(await messages());
         return {
@@ -86,6 +90,7 @@ describe("ai service", () => {
   it("refuses to ask the model about nothing when market data is missing", async () => {
     const repository: AiRepository = {
       ask: vi.fn(),
+      workersAiSummary: vi.fn(async () => noBackup),
       summary: vi.fn(async (messages) => {
         await expect(messages()).rejects.toThrow(/no market data/);
         return { status: "unavailable", reason: "provider-error" } as BudgetResult<MarketBrief>;
@@ -114,6 +119,7 @@ describe("ai service — ask", () => {
     let sent = "";
     const repository: AiRepository = {
       summary: vi.fn(),
+      workersAiSummary: vi.fn(),
       ask: vi.fn(async (messages) => {
         sent = JSON.stringify(messages);
         return {
@@ -148,6 +154,7 @@ describe("ai service — ask", () => {
   it("reports the global daily cap distinctly", async () => {
     const repository: AiRepository = {
       summary: vi.fn(),
+      workersAiSummary: vi.fn(),
       ask: vi.fn(
         async () =>
           ({ status: "unavailable", reason: "budget-exhausted" }) as BudgetResult<
@@ -161,5 +168,72 @@ describe("ai service — ask", () => {
       status: "unavailable",
       reason: "budget-exhausted",
     });
+  });
+});
+
+describe("ai service — Workers AI fallback for the brief (spec 10.2)", () => {
+  const WAI_BRIEF: MarketBrief = {
+    text: "Backup brief.",
+    model: "@cf/meta/llama",
+    promptVersion: "v",
+  };
+  const fresh = (data: MarketBrief): BudgetResult<MarketBrief> => ({
+    status: "fresh",
+    data,
+    fetchedAt: NOW,
+    expiresAt: NOW + 10_800_000,
+    cacheHit: false,
+  });
+  const failed = { status: "unavailable", reason: "provider-error" } as const;
+
+  it("never calls Workers AI while Groq has a fresh brief", async () => {
+    const repository: AiRepository = {
+      ask: vi.fn(),
+      summary: vi.fn(async () => fresh(BRIEF)),
+      workersAiSummary: vi.fn(async () => fresh(WAI_BRIEF)),
+    };
+    await createAiService({ repository, market: market(), fx, now: () => NOW }).getBrief();
+    expect(repository.workersAiSummary).not.toHaveBeenCalled();
+  });
+
+  it("serves the Workers AI brief, and names it, when Groq fails", async () => {
+    let sent = "";
+    const repository: AiRepository = {
+      ask: vi.fn(),
+      summary: vi.fn(async () => failed),
+      workersAiSummary: vi.fn(async (messages) => {
+        sent = JSON.stringify(await messages());
+        return fresh(WAI_BRIEF);
+      }),
+    };
+    const env = await createAiService({
+      repository,
+      market: market(),
+      fx,
+      now: () => NOW,
+    }).getBrief();
+    expect(env).toMatchObject({ status: "fresh", source: "workers-ai", data: WAI_BRIEF });
+    expect(sent).toContain("BTC"); // same prompt and context as Groq
+  });
+
+  it("falls back to the last Groq brief, labelled stale, when Workers AI fails too", async () => {
+    const repository: AiRepository = {
+      ask: vi.fn(),
+      summary: vi.fn(async () => ({
+        status: "stale" as const,
+        data: BRIEF,
+        fetchedAt: NOW - 14_400_000,
+        expiresAt: NOW - 3_600_000,
+        reason: "provider-error" as const,
+      })),
+      workersAiSummary: vi.fn(async () => failed),
+    };
+    const env = await createAiService({
+      repository,
+      market: market(),
+      fx,
+      now: () => NOW,
+    }).getBrief();
+    expect(env).toMatchObject({ status: "stale", source: "groq", data: BRIEF });
   });
 });

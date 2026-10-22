@@ -106,6 +106,14 @@ describe("computeStatuses (spec 10.6)", () => {
     });
   });
 
+  it("a backup that is not wired up yet never claims to be ready, even with its keys set", () => {
+    const row = byId(
+      computeStatuses(base({ "workers-ai": { configured: true } }), { now: NOW }),
+      "workers-ai",
+    );
+    expect(row).toMatchObject({ state: "standby", reason: "Not connected yet." });
+  });
+
   it("a core provider without a key says so without calling itself a backup", () => {
     const row = computeStatuses(base({ coingecko: { configured: false } }), { now: NOW }).find(
       (r) => r.id === "coingecko",

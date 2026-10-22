@@ -2,7 +2,7 @@ import { CACHE_POLICY } from "./cache-policy";
 
 /**
  * Providers shown on /status, in display order. `cacheKey` is the dataset whose age is reported;
- * `keyEnv` is the env var that must be set for the provider to be usable (null = keyless).
+ * `keyEnv` lists the env vars that must all be set for the provider to be usable ([] = keyless).
  */
 export const STATUS_PROVIDERS = [
   {
@@ -12,7 +12,7 @@ export const STATUS_PROVIDERS = [
     serves: "Crypto prices",
     cacheKey: "coingecko:markets:top50",
     ttl: CACHE_POLICY["coingecko:markets"].ttl,
-    keyEnv: "COINGECKO_API_KEY",
+    keyEnv: ["COINGECKO_API_KEY"],
     backup: "coinmarketcap",
   },
   {
@@ -22,7 +22,7 @@ export const STATUS_PROVIDERS = [
     serves: "Crypto prices (backup)",
     cacheKey: "coinmarketcap:listings",
     ttl: CACHE_POLICY["coingecko:markets"].ttl,
-    keyEnv: "CMC_API_KEY",
+    keyEnv: ["CMC_API_KEY"],
     backup: null,
   },
   {
@@ -32,7 +32,7 @@ export const STATUS_PROVIDERS = [
     serves: "US stocks",
     cacheKey: "twelvedata:quote",
     ttl: CACHE_POLICY["twelvedata:quote-closed"].ttl,
-    keyEnv: "TWELVEDATA_API_KEY",
+    keyEnv: ["TWELVEDATA_API_KEY"],
     backup: "finnhub",
   },
   {
@@ -42,7 +42,7 @@ export const STATUS_PROVIDERS = [
     serves: "US stocks (backup)",
     cacheKey: "finnhub:quote",
     ttl: CACHE_POLICY["twelvedata:quote-open"].ttl,
-    keyEnv: "FINNHUB_API_KEY",
+    keyEnv: ["FINNHUB_API_KEY"],
     backup: null,
   },
   {
@@ -52,7 +52,7 @@ export const STATUS_PROVIDERS = [
     serves: "FX rates",
     cacheKey: "frankfurter:latest:USD",
     ttl: CACHE_POLICY["frankfurter:latest"].ttl,
-    keyEnv: null,
+    keyEnv: [],
     backup: "exchangerate",
   },
   {
@@ -62,7 +62,7 @@ export const STATUS_PROVIDERS = [
     serves: "FX rates (backup)",
     cacheKey: "exchangerate:latest:USD",
     ttl: CACHE_POLICY["exchangerate:latest"].ttl,
-    keyEnv: null,
+    keyEnv: [],
     backup: null,
   },
   {
@@ -72,7 +72,7 @@ export const STATUS_PROVIDERS = [
     serves: "AI market brief",
     cacheKey: "groq:summary",
     ttl: CACHE_POLICY["groq:summary"].ttl,
-    keyEnv: "GROQ_API_KEY",
+    keyEnv: ["GROQ_API_KEY"],
     backup: "workers-ai",
   },
   {
@@ -82,10 +82,8 @@ export const STATUS_PROVIDERS = [
     serves: "AI market brief (backup)",
     cacheKey: "workers-ai:summary",
     ttl: CACHE_POLICY["groq:summary"].ttl,
-    keyEnv: "CF_AI_TOKEN",
+    keyEnv: ["CF_ACCOUNT_ID", "CF_AI_TOKEN"],
     backup: null,
-    /** No client yet: the token cannot run Workers AI models (401), so no real fixture exists. */
-    wired: false,
   },
   {
     id: "worldbank",
@@ -94,7 +92,7 @@ export const STATUS_PROVIDERS = [
     serves: "Indonesia macro indicators",
     cacheKey: "worldbank:indicators:IDN",
     ttl: CACHE_POLICY["worldbank:indicators"].ttl,
-    keyEnv: null,
+    keyEnv: [],
     backup: null,
   },
 ] as const;

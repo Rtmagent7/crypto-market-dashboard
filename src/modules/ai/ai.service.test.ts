@@ -140,7 +140,11 @@ describe("ai service — ask", () => {
   });
 
   it("does not call the model without market data", async () => {
-    const repository: AiRepository = { summary: vi.fn(), ask: vi.fn() };
+    const repository: AiRepository = {
+      summary: vi.fn(),
+      workersAiSummary: vi.fn(),
+      ask: vi.fn(),
+    };
     const result = await createAiService({
       repository,
       market: market(null),

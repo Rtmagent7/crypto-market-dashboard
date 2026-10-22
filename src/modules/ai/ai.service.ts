@@ -1,7 +1,7 @@
 import { getFxService, type FxService } from "@/modules/fx/fx.service";
 import { getMarketService, type MarketService } from "@/modules/market/market.service";
 import type { DataEnvelope, MarketBrief } from "@/modules/shared/domain";
-import { toEnvelope } from "@/modules/shared/envelope";
+import { withFallback } from "@/modules/shared/fallback";
 
 import { getAiRepository, type AiRepository } from "./ai.repository";
 import { buildChatMessages, buildMarketContext, buildMessages } from "./prompts";
@@ -18,7 +18,8 @@ export interface AiService {
 
 /**
  * The brief is built from data already in the shared cache (no extra provider calls), and only
- * when the 3-hour cache needs a new one. Workers AI joins as the fallback once its key exists.
+ * when the 3-hour cache needs a new one. Workers AI backs it up (spec 10.2) with the same prompt;
+ * when both fail, the last brief is served with its timestamp.
  */
 export const createAiService = ({
   repository,
@@ -64,11 +65,12 @@ export const createAiService = ({
         buildMarketContext({ coins: top.data, global: global.data, usdIdr: usdIdr.data }),
       );
     };
-    return toEnvelope(await repository.summary(messages), {
-      source: "groq",
-      map: (b) => b,
-      now: now(),
-    });
+    const identity = (b: MarketBrief): MarketBrief => b;
+    return withFallback(
+      { provider: "groq", load: () => repository.summary(messages), map: identity },
+      { provider: "workers-ai", load: () => repository.workersAiSummary(messages), map: identity },
+      now(),
+    );
   },
 });
 

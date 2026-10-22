@@ -48,6 +48,16 @@ describe("quota compliance: fx module", () => {
     expect(hits.get("exchangerate:/latest") ?? 0).toBe(0);
   });
 
+  it("concurrent visitors at the TTL boundary never wake the backup", async () => {
+    const { service, at } = harness();
+    await service.getRates();
+    at(START + CACHE_POLICY["frankfurter:latest"].ttl * 1000 + 1);
+    const envs = await Promise.all(Array.from({ length: 10 }, () => service.getRates()));
+    expect(envs.every((e) => e.source === "frankfurter")).toBe(true);
+    expect(hits.get("frankfurter:/latest")).toBe(2);
+    expect(hits.get("exchangerate:/latest") ?? 0).toBe(0);
+  });
+
   it("when Frankfurter fails, ExchangeRate-API serves — and is cached by its own 24 h TTL", async () => {
     server.use(
       http.get("https://api.frankfurter.dev/v1/latest", () =>

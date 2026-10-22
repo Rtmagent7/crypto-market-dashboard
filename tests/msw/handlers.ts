@@ -8,6 +8,7 @@ import cgChart30d from "../fixtures/coingecko-market-chart-30d.json";
 import cgGlobal from "../fixtures/coingecko-global.json";
 import cgMarkets from "../fixtures/coingecko-markets.json";
 import cgTrending from "../fixtures/coingecko-trending.json";
+import cmcListings from "../fixtures/coinmarketcap-listings.json";
 import erLatest from "../fixtures/exchangerate-latest-open.json";
 import ffLatest from "../fixtures/frankfurter-latest.json";
 import ffRange from "../fixtures/frankfurter-range-1y.json";
@@ -54,6 +55,10 @@ export const createProviderHandlers = (hits: HitCounter = new Map()): HttpHandle
       const days = new URL(request.url).searchParams.get("days");
       return HttpResponse.json(days === "365" ? cgChart1y : cgChart30d);
     }),
+    http.get(
+      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
+      () => (hit("coinmarketcap:/listings/latest"), HttpResponse.json(cmcListings)),
+    ),
     http.get(`${FF}/latest`, () => (hit("frankfurter:/latest"), HttpResponse.json(ffLatest))),
     http.get(`${FF}/:range`, () => (hit("frankfurter:/range"), HttpResponse.json(ffRange))),
     http.get(`${TD}/quote`, () => (hit("twelvedata:/quote"), HttpResponse.json(tdQuote))),

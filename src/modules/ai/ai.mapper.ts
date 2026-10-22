@@ -1,4 +1,5 @@
 import type { GroqCompletion } from "@/infra/providers/groq.schema";
+import type { WaiCompletion } from "@/infra/providers/workers-ai.schema";
 import type { MarketBrief } from "@/modules/shared/domain";
 
 /**
@@ -36,4 +37,14 @@ export const fromGroqCompletion = (
 ): MarketBrief | null => {
   const text = cleanBrief(c.choices[0]?.message.content ?? "", maxWords);
   return text ? { text, model: c.model, promptVersion } : null;
+};
+
+/** Workers AI backup → the same MarketBrief, cleaned by the same rules. */
+export const fromWorkersAi = (
+  c: WaiCompletion,
+  promptVersion: string,
+  maxWords = 120,
+): MarketBrief | null => {
+  const text = cleanBrief(c.result.choices[0]?.message.content ?? "", maxWords);
+  return text ? { text, model: c.result.model, promptVersion } : null;
 };

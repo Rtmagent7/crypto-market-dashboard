@@ -45,7 +45,8 @@ export const createStatusRepository = ({
               cooldown: Boolean(cooldown),
               fetchedAt: entry?.fetchedAt ?? null,
               // Mock mode serves every provider from fixtures, so none of them needs a key there.
-              configured: env.MOCK_PROVIDERS === "1" || p.keyEnv === null || Boolean(env[p.keyEnv]),
+              configured:
+                env.MOCK_PROVIDERS === "1" || p.keyEnv.every((name) => Boolean(env[name])),
               quotaCap: Math.max(1, Math.floor(BUDGETS[budget].cap * env.BUDGET_CAP_RATIO)),
               quotaPeriod: period,
             },

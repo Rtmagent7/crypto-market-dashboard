@@ -32,6 +32,8 @@ export const CACHE_POLICY = {
   "frankfurter:range-1y": { ttl: DAY, staleFor: 7 * DAY },
   "exchangerate:latest": { ttl: DAY, staleFor: 7 * DAY },
   "groq:summary": { ttl: 3 * HOUR, staleFor: 7 * DAY },
+  // Backup brief, only called while Groq has no fresh brief: same 3 h cycle.
+  "workers-ai:summary": { ttl: 3 * HOUR, staleFor: 7 * DAY },
   // Annual data, published a few times a year (spec §4: /macro ISR 7 days).
   "worldbank:indicators": { ttl: 7 * DAY, staleFor: 30 * DAY },
 } as const satisfies Record<string, CachePolicy>;

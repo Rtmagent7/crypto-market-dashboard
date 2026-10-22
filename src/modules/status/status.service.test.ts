@@ -55,6 +55,22 @@ describe("status service reads the gate's own keys", () => {
     expect(rows.coinmarketcap).toMatchObject({ state: "standby" });
   });
 
+  it("Workers AI needs both its account id and its token to count as configured", async () => {
+    const reasonWith = async (extra: Record<string, string>): Promise<string> => {
+      const env = await createStatusService({
+        repository: createStatusRepository({
+          store: createMemoryStore(() => NOW),
+          env: { BUDGET_CAP_RATIO: 1, VERCEL_ENV: undefined, NODE_ENV: "production", ...extra },
+        }),
+        now: () => NOW,
+      }).getStatus();
+      return env.data!.find((r) => r.id === "workers-ai")!.reason ?? "";
+    };
+    expect(await reasonWith({ CF_AI_TOKEN: "t" })).toMatch(/no api key/i);
+    expect(await reasonWith({ CF_ACCOUNT_ID: "a" })).toMatch(/no api key/i);
+    expect(await reasonWith({ CF_ACCOUNT_ID: "a", CF_AI_TOKEN: "t" })).toMatch(/not needed/i);
+  });
+
   it("in mock mode every provider counts as configured: fixtures serve them all", async () => {
     const env = await createStatusService({
       repository: createStatusRepository({
